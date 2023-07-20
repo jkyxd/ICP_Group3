@@ -181,6 +181,7 @@ average_revenue_for_hour.head(30)
 
 
 # Initialize variables
+average_revenue_for_hour['rolling_average']=0
 max_revenue = 0
 optimal_hours = []
 for i in range(len(average_revenue_for_hour) - 4):
