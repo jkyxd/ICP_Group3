@@ -18,6 +18,8 @@ from datetime import timedelta
 # username = getpass.getpass()    # SNOWFLAKE-USERNAME
 # password = getpass.getpass()   
 
+
+model=joblib.load('model.joblib')
 connection_parameters = { "account": 'hiioykl-ix77996',"user": 'JAVIER',"password": '02B289223r04', "role": "ACCOUNTADMIN","database": "FROSTBYTE_TASTY_BYTES","warehouse": "COMPUTE_WH"}
 
 session = Session.builder.configs(connection_parameters).create()
@@ -213,11 +215,11 @@ print("Maximum Revenue:", max_revenue)
 
 
 
-model=joblib.load('model.joblib')
-df=pd.read_csv('x_final_scaled.csv')
-print(df.head())
-df=df.drop('Profit',axis=1)
-print(df.head(1))
-df.head(1).columns
-test=model.predict(df.head(1))
-print(test)
+
+# df=pd.read_csv('x_final_scaled.csv')
+# print(df.head())
+# df=df.drop('Profit',axis=1)
+# print(df.head(1))
+# df.head(1).columns
+# test=model.predict(df.head(1))
+# print(test)
