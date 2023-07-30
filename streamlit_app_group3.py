@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+#import plotly.express as px
 st.title('SpeedyBytes 🚚')
 # st.image('speedybytes_icon2.jpg',width=600)
 tab1,tab2,tab3,tab4,tab5 = st.tabs(["tab1", "One year revenue forecast", "Optimal Shift Timing Recommendation",'tab4','tab5'])
