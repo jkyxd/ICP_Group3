@@ -11,6 +11,7 @@ with tab2: #minh
 
 with tab3: #javier
     st.header('Optimal Shift Timing Recommendation')
+    st.image('speedybytes icon.jpg', caption='Image Caption', use_column_width=True)
 
 
 
