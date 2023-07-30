@@ -14,7 +14,7 @@ with tab3: #javier
     st.subheader('Want to find out the optimal working hours for your truck?')
     st.subheader('1. Specify your truck details')
     st.subheader('2. Specify the number of hours your truck is working for')
-    no_of_hours = st.number_input('Number of working hours:', min_value=1, max_value=23, step=1)
+    no_of_hours = st.number_input('Number of working hours:', min_value=1, max_value=23,value=0, step=1)
     if no_of_hours:
         st.success('Number of hours saved.')
     st.subheader('3. Specify the date your truck is working on')
