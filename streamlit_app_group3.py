@@ -8,11 +8,13 @@ with tab2: #minh
     print('gelo')
 
 with tab3: #javier
-    #st.header('Optimal Shift Timing Recommendation')
+    st.header('Optimal Shift Timing Recommendation')
 
 
 
 with tab4: #vibu
+    print('vibu')
 
 with tab5: #nathan
+    print('nathan')
     
