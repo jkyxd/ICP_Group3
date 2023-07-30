@@ -1,6 +1,6 @@
 import streamlit as st
 st.title('SpeedyBytes 🚚')
-st.image('speedybytes_icon.jpg',width=300)
+st.image('speedybytes_icon.jpg',width=800)
 tab1,tab2,tab3,tab4,tab5 = st.tabs(["tab1", "One year revenue forecast", "Optimal Shift Timing Recommendation",'tab4','tab5'])
 with tab1: #ayrton
     st.header('omg tab1 works yay')
