@@ -11,7 +11,11 @@ with tab2: #minh
 
 with tab3: #javier
     st.header('Optimal Shift Timing Recommendation')
-    st.subheader('Want to find out the optimal working hours for your truck? Enter the truck information and the number of hours the truck is working for. This tab will help you find the optimal timing for your truck to work based on the total revenue average revenue across all locations.')
+    st.subheader('Want to find out the optimal working hours for your truck?')
+    st.subheader('1. Specify your truck details')
+    st.subheader('2. Specify the number of hours your truck is working for')
+    st.subheader('3. Specify the date your truck is working on')
+    st.subheader('4. Optimal shift timing will be recommended to you based on the forecasted total average revenue across all locations')
     
 
 
