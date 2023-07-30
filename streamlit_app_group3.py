@@ -14,11 +14,18 @@ with tab3: #javier
     st.subheader('Want to find out the optimal working hours for your truck?')
     st.subheader('1. Specify your truck details')
     st.subheader('2. Specify the number of hours your truck is working for')
-    default_hour=5
-    no_of_hours = st.number_input('Number of working hours:', min_value=1, max_value=23, step=1)
-    input_modified = no_of_hours!=default_hour
-    if no_of_hours is not None:
-        st.success('Number of hours saved.')
+
+    no_of_hours = st.text_input("Enter the number of hours (1-23): ")
+    if no_of_hours.isnumeric():
+        hours = int(user_input)
+        if 1 <= hours <= 23:
+            st.success(f"Your input of {hours} hours has been saved!")
+        else:
+            st.warning("Please enter a number between 1 and 23.")
+    elif no_of_hours.strip() != "":
+        st.warning("Please enter a valid numeric value.")
+  
+
     st.subheader('3. Specify the date your truck is working on')
     st.subheader('4. Optimal shift timing will be recommended to you based on the forecasted total average revenue across all locations')
     
