@@ -17,7 +17,7 @@ with tab3: #javier
 
     no_of_hours = st.text_input("Enter the number of hours (1-23): ")
     if no_of_hours.isnumeric():
-        hours = int(user_input)
+        hours = int(no_of_hours)
         if 1 <= hours <= 23:
             st.success(f"Your input of {hours} hours has been saved!")
         else:
