@@ -4,7 +4,8 @@ with tab1: #ayrton
     st.header('omg tab1 works yay')
 
 
-with tab2: #minh?
+with tab2: #minh
+    print('gelo')
 
 with tab3: #javier
     #st.header('Optimal Shift Timing Recommendation')
