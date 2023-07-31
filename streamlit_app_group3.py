@@ -7,7 +7,7 @@ import snowflake.snowpark.types as T
 from snowflake.snowpark.window import Window
 #from sklearn import preprocessing # https://github.com/Snowflake-Labs/snowpark-python-demos/tree/main/sp4py_utilities
 from snowflake.snowpark.functions import col
-
+import plotly.express as px
 import getpass
 import pandas as pd
 import matplotlib.pyplot as plt
