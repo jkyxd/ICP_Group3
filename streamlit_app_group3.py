@@ -15,6 +15,9 @@ from datetime import datetime
 import math
 from datetime import timedelta
 
+import folium
+from streamlit_folium import st_folium
+
 #Loading model and data
 model=joblib.load('model.joblib')
 connection_parameters = { "account": 'hiioykl-ix77996',"user": 'JAVIER',"password": '02B289223r04', "role": "ACCOUNTADMIN","database": "FROSTBYTE_TASTY_BYTES","warehouse": "COMPUTE_WH"}
