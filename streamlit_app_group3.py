@@ -30,6 +30,23 @@ with tab3: #javier
   
 
     st.subheader('3. Specify the date your truck is working on')
+    def is_valid_date_format(date_string):
+    try:
+        # Try to parse the input string as a date
+        year, month, day = map(int, date_string.split('-'))
+        if 1 <= month <= 12 and 1 <= day <= 31:
+            return True
+    except ValueError:
+        pass
+    return False
+
+    date = st.text_input("Enter the date (YYYY-M-D)", key="date_input")
+    
+    # Validate the user input and display a success message
+    if is_valid_date_format(user_input):
+        st.success(f"Your input date '{user_input}' has been saved !")
+    elif user_input.strip() != "":
+        st.warning("Please enter a valid date in the format 'YYYY-M-D'.")
     st.subheader('4. Optimal shift timing will be recommended to you based on the forecasted total average revenue across all locations')
     
 
