@@ -16,6 +16,10 @@ with tab3: #javier
     st.header('Optimal Shift Timing Recommendation')
     st.subheader('Want to find out the optimal working hours for your truck?')
     st.subheader('1. Specify your truck details')
+     truck_ids = [27,43,28,44,46,47]
+     truck_id = st.selectbox("Select your Truck ID", truck_ids)
+    if truck_id:
+            st.success(f"Your selected Truck ID '{truck_id}' has been saved!")
     st.subheader('2. Specify the number of hours your truck is working for')
 
     no_of_hours = st.text_input("Enter the number of hours (1-23): ")
