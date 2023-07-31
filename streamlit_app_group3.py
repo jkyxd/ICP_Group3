@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+#import plotly.express as px
 st.title('SpeedyBytes 🚚')
 st.image('speedybytes_icon2.jpg',  width=600)
 # st.image('speedybytes_icon2.jpg',width=600)
