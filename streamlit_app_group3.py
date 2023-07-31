@@ -5,15 +5,15 @@ import pandas as pd
 #import snowflake.snowpark.functions as F
 #import snowflake.snowpark.types as T
 #from snowflake.snowpark.window import Window
-from sklearn import preprocessing # https://github.com/Snowflake-Labs/snowpark-python-demos/tree/main/sp4py_utilities
+#from sklearn import preprocessing # https://github.com/Snowflake-Labs/snowpark-python-demos/tree/main/sp4py_utilities
 #from snowflake.snowpark.functions import col
 
-import getpass
-import pandas as pd
+#import getpass
+#import pandas as pd
 import matplotlib.pyplot as plt
-from datetime import datetime
-import math
-from datetime import timedelta
+#from datetime import datetime
+#import math
+#from datetime import timedelta
 
 #Loading model and data
 model=joblib.load('model.joblib')
