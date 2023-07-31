@@ -2,6 +2,5 @@ snowflake-snowpark-python==1.3.0
 joblib==1.2.0
 pandas
 xgboost==1.7.5
-sckit-learn==1.2.2
 plotly
 feature_engine==1.6.0
