@@ -64,10 +64,10 @@ with tab5: #vibu
     st.write(f"Average Predicted Earnings: ${round(average_predicted_earnings, 2)}")
     st.write(f"Total Locations Visited: {total_locations_visited}")
 
-# Sales Performance Section
-    st.header("Sales Performance")
-    fig_sales = px.bar(df, x='Date', y='predicted_earning', title='Predicted Earnings Over Time')
-    st.plotly_chart(fig_sales)
+# # Sales Performance Section
+#     st.header("Sales Performance")
+#     fig_sales = px.bar(df, x='Date', y='predicted_earning', title='Predicted Earnings Over Time')
+#     st.plotly_chart(fig_sales)
 
 # Efficiency Metrics Section
     st.header("Efficiency Metrics")
