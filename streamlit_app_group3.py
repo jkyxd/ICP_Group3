@@ -133,9 +133,9 @@ with tab4: #natha
     st.header('Routing Map')
     st.subheader('Choose a truck')
     truck_ids = [27,43,28,44,46,47]
-    truck_id = st.selectbox("Select your Truck ID", truck_ids)
-    if truck_id:
-            st.success(f"Your selected Truck ID '{truck_id}' has been saved!")
+    truck_id_chosen = st.selectbox("Select your Truck ID", truck_ids)
+    if truck_id_chosen:
+            st.success(f"Your selected Truck ID '{truck_id_chosen}' has been saved!")
     
     
     
