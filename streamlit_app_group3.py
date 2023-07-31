@@ -1,5 +1,40 @@
 import streamlit as st
 import pandas as pd
+import joblib
+from snowflake.snowpark.session import Session
+import snowflake.snowpark.functions as F
+import snowflake.snowpark.types as T
+from snowflake.snowpark.window import Window
+from sklearn import preprocessing # https://github.com/Snowflake-Labs/snowpark-python-demos/tree/main/sp4py_utilities
+from snowflake.snowpark.functions import col
+
+import getpass
+import pandas as pd
+import matplotlib.pyplot as plt
+from datetime import datetime
+import math
+from datetime import timedelta
+
+#Loading model and data
+model=joblib.load('model.joblib')
+connection_parameters = { "account": 'hiioykl-ix77996',"user": 'JAVIER',"password": '02B289223r04', "role": "ACCOUNTADMIN","database": "FROSTBYTE_TASTY_BYTES","warehouse": "COMPUTE_WH"}
+session = Session.builder.configs(connection_parameters).create()
+X_final_scaled=pd.read_csv('x_final_scaled.csv')
+unique_location_ids = X_final_scaled['LOCATION_ID'].unique()
+# Create a list to store the table data
+table_data = []
+# Create a DataFrame to store the table data
+df_unique_locations_lat_long = pd.DataFrame(columns=["Location ID", "Latitude", "Longitude"])
+
+# Iterate over each unique location ID
+for location_id in unique_location_ids:
+    location = X_final_scaled[X_final_scaled['LOCATION_ID'] == location_id]
+    latitude = location['LAT'].values[0]
+    longitude = location['LONG'].values[0]
+    df_unique_locations_lat_long = pd.concat([df_unique_locations_lat_long, pd.DataFrame({"Location ID": [location_id],
+                                                  "Latitude": [latitude],
+                                                  "Longitude": [longitude]})],
+                         ignore_index=True)
 #import plotly.express as px
 st.title('SpeedyBytes 🚚')
 st.image('speedybytes_icon2.jpg',  width=600)
