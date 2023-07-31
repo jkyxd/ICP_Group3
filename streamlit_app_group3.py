@@ -34,7 +34,7 @@ with tab3: #javier
         try:
         # Try to parse the input string as a date
             year, month, day = map(int, date_string.split('-'))
-            if 1 <= month <= 12 and 1 <= day <= 31:
+            if 1 <= month <= 12 and 1 <= day <= 31 and year>2000:
                 return True
         except ValueError:
             pass
