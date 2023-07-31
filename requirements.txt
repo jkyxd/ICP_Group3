@@ -1,4 +1,6 @@
 scipy
+joblib
+snowflake-connector-python
 matplotlib
 numpy==1.18.1
 pandas
