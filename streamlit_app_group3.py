@@ -1,12 +1,12 @@
 import streamlit as st
 import pandas as pd
 #import joblib
-from snowflake.snowpark.session import Session
-import snowflake.snowpark.functions as F
-import snowflake.snowpark.types as T
-from snowflake.snowpark.window import Window
+#from snowflake.snowpark.session import Session
+#import snowflake.snowpark.functions as F
+#import snowflake.snowpark.types as T
+#from snowflake.snowpark.window import Window
 from sklearn import preprocessing # https://github.com/Snowflake-Labs/snowpark-python-demos/tree/main/sp4py_utilities
-from snowflake.snowpark.functions import col
+#from snowflake.snowpark.functions import col
 
 import getpass
 import pandas as pd
@@ -16,7 +16,7 @@ import math
 from datetime import timedelta
 
 #Loading model and data
-model=joblib.load('model.joblib')
+#model=joblib.load('model.joblib')
 connection_parameters = { "account": 'hiioykl-ix77996',"user": 'JAVIER',"password": '02B289223r04', "role": "ACCOUNTADMIN","database": "FROSTBYTE_TASTY_BYTES","warehouse": "COMPUTE_WH"}
 session = Session.builder.configs(connection_parameters).create()
 X_final_scaled=pd.read_csv('x_final_scaled.csv')
