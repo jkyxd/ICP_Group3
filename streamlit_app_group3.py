@@ -31,14 +31,14 @@ with tab3: #javier
 
     st.subheader('3. Specify the date your truck is working on')
     def is_valid_date_format(date_string):
-    try:
+        try:
         # Try to parse the input string as a date
-        year, month, day = map(int, date_string.split('-'))
-        if 1 <= month <= 12 and 1 <= day <= 31:
-            return True
-    except ValueError:
-        pass
-    return False
+            year, month, day = map(int, date_string.split('-'))
+            if 1 <= month <= 12 and 1 <= day <= 31:
+                return True
+        except ValueError:
+            pass
+        return False
 
     date = st.text_input("Enter the date (YYYY-M-D)", key="date_input")
     
