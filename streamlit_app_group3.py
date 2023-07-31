@@ -167,7 +167,7 @@ with tab4: #natha
     folium.PolyLine(points, color = 'blue', dash_array = '5', opacity = '0.85',
                     tooltip = 'Truck Route').add_to(m)
     
-    m
+    # m
     
     st_data = st_folium(m, width=725)
 
