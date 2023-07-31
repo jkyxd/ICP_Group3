@@ -1,4 +1,4 @@
- plotly==5.15.0
+plotly==5.15.0
 joblib
 pandas
 streamlit
