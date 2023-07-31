@@ -43,9 +43,9 @@ with tab3: #javier
     date = st.text_input("Enter the date (YYYY-M-D)", key="date_input")
     
     # Validate the user input and display a success message
-    if is_valid_date_format(user_input):
-        st.success(f"Your input date '{user_input}' has been saved !")
-    elif user_input.strip() != "":
+    if is_valid_date_format(date):
+        st.success(f"Your input date '{date}' has been saved !")
+    elif date.strip() != "":
         st.warning("Please enter a valid date in the format 'YYYY-M-D'.")
     st.subheader('4. Optimal shift timing will be recommended to you based on the forecasted total average revenue across all locations')
     
