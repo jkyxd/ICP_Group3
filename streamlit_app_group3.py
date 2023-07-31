@@ -46,12 +46,7 @@ with tab5: #vibu
 # Sort the DataFrame by Date
     df.sort_values(by='Date', inplace=True)
 
-# Create the Streamlit app
-    st.set_page_config(
-    page_title="Food Truck Competitor Analysis Dashboard",
-    page_icon="🚚",
-    layout="wide",
-)
+
 
 # Dashboard title
     st.title("Food Truck Competitor Analysis Dashboard")
