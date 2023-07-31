@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import joblib
+#import joblib
 from snowflake.snowpark.session import Session
 import snowflake.snowpark.functions as F
 import snowflake.snowpark.types as T
