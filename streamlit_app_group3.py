@@ -156,8 +156,9 @@ with tab3: #javier
             
             city = truck_df['PRIMARY_CITY'].iloc[0]
         
-            query = "SELECT * FROM LOCATION WHERE CITY = '{}'".format(city)
-            location_df=session.sql(query).toPandas()
+            # query = "SELECT * FROM LOCATION WHERE CITY = '{}'".format(city)
+            # location_df=session.sql(query).toPandas()
+            location_df=pd.read_csv('location_df.csv')
             #location_df = location_df[location_df['CITY']==city]
             city_locations = location_df.merge(df_unique_locations_lat_long, left_on='LOCATION_ID', right_on='Location ID', how='inner')
             city_locations = city_locations[['LOCATION_ID','Latitude','Longitude']]
