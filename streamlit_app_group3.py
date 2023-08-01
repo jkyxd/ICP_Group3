@@ -161,8 +161,8 @@ with tab3: #javier
         # Show the output once the algorithm is done
         st.success("Algorithm completed!")
         st.write("Output:")
-        st.text("Optimal Hours: ",output[0])
-        st.text("Maximum Revenue: ",output[1])
+        st.text("Optimal Hours: "+output[0])
+        st.text("Maximum Revenue: "+output[1])
 
 
 
