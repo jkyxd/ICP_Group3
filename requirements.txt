@@ -2,7 +2,7 @@ snowflake-snowpark-python
 snowflake-connector-python
 joblib==1.2.0
 pandas
-xgboost==1.7.5
+xgboost==1.7.6
 plotly
 feature_engine==1.6.0
 matplotlib
