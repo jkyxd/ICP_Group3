@@ -154,16 +154,16 @@ with tab3: #javier
 
     
         return values
-        if st.button("Run Algorithm"):
-            # Display a loading message while the algorithm is running
-            with st.spinner("Running the algorithm..."):
-                output = find_optimal_hour(truck_id,date,no_of_hours)
+    if st.button("Run Algorithm"):
+        # Display a loading message while the algorithm is running
+        with st.spinner("Running the algorithm..."):
+            output = find_optimal_hour(truck_id,date,no_of_hours)
     
-            # Show the output once the algorithm is done
-            st.success("Algorithm completed!")
-            st.write("Output:")
-            st.text("Optimal Hours: ",values[0])
-            st.text("Maximum Revenue: ",values[1])
+        # Show the output once the algorithm is done
+        st.success("Algorithm completed!")
+        st.write("Output:")
+        st.text("Optimal Hours: ",values[0])
+        st.text("Maximum Revenue: ",values[1])
 
 
 
