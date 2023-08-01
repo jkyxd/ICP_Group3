@@ -15,40 +15,40 @@ from datetime import datetime
 import math
 from datetime import timedelta
 
-# import folium
-# from streamlit_folium import st_folium
+import folium
+from streamlit_folium import st_folium
 
-# #Loading model and data
-# model=joblib.load('model.joblib')
-# connection_parameters = { "account": 'hiioykl-ix77996',"user": 'JAVIER',"password": '02B289223r04', "role": "ACCOUNTADMIN","database": "FROSTBYTE_TASTY_BYTES","warehouse": "COMPUTE_WH"}
-# session = Session.builder.configs(connection_parameters).create()
-# X_final_scaled=pd.read_csv('x_final_scaled.csv')
-# unique_location_ids = X_final_scaled['LOCATION_ID'].unique()
-# # Create a list to store the table data
-# table_data = []
-# # Create a DataFrame to store the table data
-# df_unique_locations_lat_long = pd.DataFrame(columns=["Location ID", "Latitude", "Longitude"])
+#Loading model and data
+model=joblib.load('model.joblib')
+connection_parameters = { "account": 'hiioykl-ix77996',"user": 'JAVIER',"password": '02B289223r04', "role": "ACCOUNTADMIN","database": "FROSTBYTE_TASTY_BYTES","warehouse": "COMPUTE_WH"}
+session = Session.builder.configs(connection_parameters).create()
+X_final_scaled=pd.read_csv('x_final_scaled.csv')
+unique_location_ids = X_final_scaled['LOCATION_ID'].unique()
+# Create a list to store the table data
+table_data = []
+# Create a DataFrame to store the table data
+df_unique_locations_lat_long = pd.DataFrame(columns=["Location ID", "Latitude", "Longitude"])
 
-# # Iterate over each unique location ID
-# for location_id in unique_location_ids:
-#     location = X_final_scaled[X_final_scaled['LOCATION_ID'] == location_id]
-#     latitude = location['LAT'].values[0]
-#     longitude = location['LONG'].values[0]
-#     df_unique_locations_lat_long = pd.concat([df_unique_locations_lat_long, pd.DataFrame({"Location ID": [location_id],
-#                                                   "Latitude": [latitude],
-#                                                   "Longitude": [longitude]})],
-#                          ignore_index=True)
-# #import plotly.express as px
-# st.title('SpeedyBytes 🚚')
-# st.image('speedybytes_icon2.jpg',  width=600)
-# # st.image('speedybytes_icon2.jpg',width=600)
-# tab1,tab2,tab3,tab4,tab5 = st.tabs(["tab1", "One year revenue forecast", "Optimal Shift Timing Recommendation",'tab4','tab5'])
-# with tab1: #ayrton
-#     st.header('omg tab1 works yay')
+# Iterate over each unique location ID
+for location_id in unique_location_ids:
+    location = X_final_scaled[X_final_scaled['LOCATION_ID'] == location_id]
+    latitude = location['LAT'].values[0]
+    longitude = location['LONG'].values[0]
+    df_unique_locations_lat_long = pd.concat([df_unique_locations_lat_long, pd.DataFrame({"Location ID": [location_id],
+                                                  "Latitude": [latitude],
+                                                  "Longitude": [longitude]})],
+                         ignore_index=True)
+#import plotly.express as px
+st.title('SpeedyBytes 🚚')
+st.image('speedybytes_icon2.jpg',  width=600)
+# st.image('speedybytes_icon2.jpg',width=600)
+tab1,tab2,tab3,tab4,tab5 = st.tabs(["tab1", "One year revenue forecast", "Optimal Shift Timing Recommendation",'tab4','tab5'])
+with tab1: #ayrton
+    st.header('omg tab1 works yay')
 
 
-# with tab2: #minh
-#     print('gelo')
+with tab2: #minh
+    print('gelo')
 
 # with tab3: #javier
 #     st.header('Optimal Shift Timing Recommendation')
