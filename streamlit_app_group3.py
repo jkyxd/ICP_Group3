@@ -84,12 +84,73 @@ with tab3: #javier
 
     date = st.text_input("Enter the date (YYYY-M-D)", key="date_input")
     
+    
     # Validate the user input and display a success message
     if is_valid_date_format(date):
         st.success(f"Your input date '{date}' has been saved !")
     elif date.strip() != "":
         st.warning("Please enter a valid date in the format 'YYYY-M-D'.")
     st.subheader('4. Optimal shift timing will be recommended to you based on the forecasted total average revenue across all locations')
+
+
+def find_optimal_hour(truck_id,date,no_of_hours):
+    # user input
+    truck_id = 38
+    date = '2020-8-25'
+    datetime_object = datetime.strptime(date, '%Y-%m-%d')
+    no_of_hours=5
+    input_df = pd.DataFrame({'TRUCK_ID': [truck_id],'date': [date]})
+
+    #seperate date into month, dow, day, public_holiday
+    input_df['date'] = pd.to_datetime(input_df['date'])
+    input_df['MONTH'] = input_df['date'].dt.month
+    input_df['DOW'] = input_df['date'].dt.weekday
+    input_df['DAY'] = input_df['date'].dt.day
+    input_df['WOM'] = (input_df['DAY'] - 1) // 7 + 1
+    input_df['YEAR'] = input_df['date'].dt.year
+    
+    public_holidays = [
+        {'Month': 7, 'Day': 4, 'DOW': None, 'WOM': None},  # 4th of July
+        {'Month': 12, 'Day': 24, 'DOW': None, 'WOM': None},  # Christmas Eve
+        {'Month': 12, 'Day': 25, 'DOW': None, 'WOM': None},  # Christmas Day
+        {'Month': 10, 'Day': None, 'DOW': '0', 'WOM': 2},  # Columbus Day (second Monday in October)
+        {'Month': 6, 'Day': 19, 'DOW': None, 'WOM': None},  # Juneteenth
+        {'Month': 9, 'Day': None, 'DOW': '0', 'WOM': 1},  # Labor Day (first Monday in September)
+        {'Month': 1, 'Day': None, 'DOW': '0', 'WOM': 3},  # Martin Luther King, Jr. Day (third Monday in January)
+        {'Month': 5, 'Day': None, 'DOW': '0', 'WOM': -1},  # Memorial Day (last Monday in May)
+        {'Month': 1, 'Day': 1, 'DOW': None, 'WOM': None},  # New Year's Day
+        {'Month': 12, 'Day': 31, 'DOW': None, 'WOM': None},  # New Year's Eve
+        {'Month': 11, 'Day': None, 'DOW': '3', 'WOM': 4},  # Thanksgiving Day (fourth Thursday in November)
+        {'Month': 11, 'Day': None, 'DOW': '2', 'WOM': 4},  # Thanksgiving Eve (fourth Wednesday in November)
+        {'Month': 2, 'Day': 14, 'DOW': None, 'WOM': None},  # Valentine's Day
+        {'Month': 11, 'Day': 11, 'DOW': None, 'WOM': None},  # Veterans Day
+        {'Month': 10, 'Day': 31, 'DOW': None, 'WOM': None},  # Halloween
+        {'Month': 3, 'Day': 17, 'DOW': None, 'WOM': None},  # St. Patrick's Day
+        {'Month': 11, 'Day': 25, 'DOW': '4', 'WOM': None},  # Black Friday
+        {'Month': 12, 'Day': 26, 'DOW': None, 'WOM': None},  # Boxing Day
+    ]
+    
+    # Iterate over the public holidays and create the 'public_holiday' column
+    input_df['PUBLIC_HOLIDAY'] = 0
+    for holiday in public_holidays:
+        month_mask = input_df['date'].dt.month == holiday['Month']
+        day_mask = input_df['date'].dt.day == holiday['Day']
+        dow_mask = input_df['date'].dt.dayofweek == int(holiday['DOW']) if holiday['DOW'] is not None else True
+        wom_mask = (input_df['date'].dt.day - 1) // 7 + 1 == holiday['WOM'] if holiday['WOM'] is not None else True
+        mask = month_mask & day_mask & dow_mask & wom_mask
+        input_df.loc[mask, 'PUBLIC_HOLIDAY'] = 1
+    time.sleep(5)
+    return date
+
+if st.button("Run Algorithm"):
+        # Display a loading message while the algorithm is running
+        with st.spinner("Running the algorithm..."):
+            output = simulate_algorithm(truck_id,date,no_of_hours)
+
+        # Show the output once the algorithm is done
+        st.success("Algorithm completed!")
+        st.write("Output:")
+        st.text(output)
     
 
 
