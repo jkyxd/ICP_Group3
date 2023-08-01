@@ -9,3 +9,4 @@ matplotlib
 folium == 0.14.0
 streamlit-folium
 openrouteservice
+pyarrow==10.0.1
