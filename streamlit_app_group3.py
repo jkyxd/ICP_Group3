@@ -95,10 +95,9 @@ with tab3: #javier
 
     def find_optimal_hour(truck_id,date,no_of_hours):
         # user input
-        truck_id = 38
-        date = '2020-8-25'
+        
         datetime_object = datetime.strptime(date, '%Y-%m-%d')
-        no_of_hours=5
+        
         input_df = pd.DataFrame({'TRUCK_ID': [truck_id],'date': [date]})
     
         #seperate date into month, dow, day, public_holiday
@@ -162,8 +161,8 @@ with tab3: #javier
         # Show the output once the algorithm is done
         st.success("Algorithm completed!")
         st.write("Output:")
-        st.text("Optimal Hours: ",values[0])
-        st.text("Maximum Revenue: ",values[1])
+        st.text("Optimal Hours: ",output[0])
+        st.text("Maximum Revenue: ",output[1])
 
 
 
