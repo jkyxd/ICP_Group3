@@ -154,8 +154,7 @@ def find_optimal_hour(truck_id,date,no_of_hours):
 
     
     return values
-
-if st.button("Run Algorithm"):
+    if st.button("Run Algorithm"):
         # Display a loading message while the algorithm is running
         with st.spinner("Running the algorithm..."):
             output = find_optimal_hour(truck_id,date,no_of_hours)
@@ -165,6 +164,10 @@ if st.button("Run Algorithm"):
         st.write("Output:")
         st.text("Optimal Hours: ",values[0])
         st.text("Maximum Revenue: ",values[1])
+
+
+
+
     
 
 
