@@ -145,7 +145,7 @@ def find_optimal_hour(truck_id,date,no_of_hours):
 if st.button("Run Algorithm"):
         # Display a loading message while the algorithm is running
         with st.spinner("Running the algorithm..."):
-            output = simulate_algorithm(truck_id,date,no_of_hours)
+            output = find_optimal_hour(truck_id,date,no_of_hours)
 
         # Show the output once the algorithm is done
         st.success("Algorithm completed!")
