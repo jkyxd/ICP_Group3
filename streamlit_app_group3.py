@@ -148,11 +148,11 @@ with tab3: #javier
         average_revenue_for_hour=pd.DataFrame(columns=['TRUCK_ID','HOUR','AVERAGE REVENUE PER HOUR'])
         #TODO for loop testing - change hour, sum1,sum2,weathercode
         for x in range(8,24):
-            # session.use_schema("RAW_POS")
-            # query = "SELECT * FROM TRUCK WHERE TRUCK_ID = '{}'".format(truck_id)
-            # truck_df=session.sql(query).toPandas()
-            truck_df=pd.read_csv('truck_df.csv')
-            truck_df=(truck_df[truck_df['TRUCK_ID']==truck_id])
+            session.use_schema("RAW_POS")
+            query = "SELECT * FROM TRUCK WHERE TRUCK_ID = '{}'".format(truck_id)
+            truck_df=session.sql(query).toPandas()
+            # truck_df=pd.read_csv('truck_df.csv')
+            # truck_df=(truck_df[truck_df['TRUCK_ID']==truck_id])
             #truck_df = truck_df[truck_df['TRUCK_ID']==truck_id]
             city = truck_df['PRIMARY_CITY'].iloc[0]
         
