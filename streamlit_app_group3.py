@@ -139,7 +139,7 @@ def find_optimal_hour(truck_id,date,no_of_hours):
         wom_mask = (input_df['date'].dt.day - 1) // 7 + 1 == holiday['WOM'] if holiday['WOM'] is not None else True
         mask = month_mask & day_mask & dow_mask & wom_mask
         input_df.loc[mask, 'PUBLIC_HOLIDAY'] = 1
-    time.sleep(5)
+    
     return date
 
 if st.button("Run Algorithm"):
