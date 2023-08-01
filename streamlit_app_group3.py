@@ -5,7 +5,7 @@ from snowflake.snowpark.session import Session
 import snowflake.snowpark.functions as F
 import snowflake.snowpark.types as T
 from snowflake.snowpark.window import Window
-#from sklearn import preprocessing # https://github.com/Snowflake-Labs/snowpark-python-demos/tree/main/sp4py_utilities
+from sklearn import preprocessing # https://github.com/Snowflake-Labs/snowpark-python-demos/tree/main/sp4py_utilities
 from snowflake.snowpark.functions import col
 import plotly.express as px
 import getpass
