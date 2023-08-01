@@ -8,6 +8,5 @@ feature_engine==1.6.0
 matplotlib
 folium == 0.14.0
 streamlit-folium
-operator
 functools
 openrouteservice
