@@ -140,11 +140,11 @@ with tab3: #javier
             mask = month_mask & day_mask & dow_mask & wom_mask
             input_df.loc[mask, 'PUBLIC_HOLIDAY'] = 1
     
-        wdf=session.sql("Select * from ANALYTICS.WEATHER_DATA_API")
-        wdf=wdf.withColumn("H",F.substring(wdf["TIME"], 12, 2).cast("integer"))
-        wdf=wdf.withColumn("DATE",F.substring(wdf["TIME"], 0, 10))
-        wdf=wdf.select("WEATHERCODE","LOCATION_ID","H","DATE" )
-        wdf=wdf.to_pandas()
+        # wdf=session.sql("Select * from ANALYTICS.WEATHER_DATA_API")
+        # wdf=wdf.withColumn("H",F.substring(wdf["TIME"], 12, 2).cast("integer"))
+        # wdf=wdf.withColumn("DATE",F.substring(wdf["TIME"], 0, 10))
+        # wdf=wdf.select("WEATHERCODE","LOCATION_ID","H","DATE" )
+        # wdf=wdf.to_pandas()
     
         average_revenue_for_hour=pd.DataFrame(columns=['TRUCK_ID','HOUR','AVERAGE REVENUE PER HOUR'])
         #TODO for loop testing - change hour, sum1,sum2,weathercode
