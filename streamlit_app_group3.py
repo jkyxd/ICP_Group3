@@ -148,18 +148,18 @@ with tab3: #javier
         average_revenue_for_hour=pd.DataFrame(columns=['TRUCK_ID','HOUR','AVERAGE REVENUE PER HOUR'])
         #TODO for loop testing - change hour, sum1,sum2,weathercode
         for x in range(8,24):
-            # session.use_schema("RAW_POS")
-            # query = "SELECT * FROM TRUCK WHERE TRUCK_ID = '{}'".format(truck_id)
-            # truck_df=session.sql(query).toPandas()
+            session.use_schema("RAW_POS")
+            query = "SELECT * FROM TRUCK WHERE TRUCK_ID = '{}'".format(truck_id)
+            truck_df=session.sql(query).toPandas()
             truck_df=pd.read_csv('truck_df.csv')
             truck_df=(truck_df[truck_df['TRUCK_ID']==truck_id])
             
             city = truck_df['PRIMARY_CITY'].iloc[0]
         
-            # query = "SELECT * FROM LOCATION WHERE CITY = '{}'".format(city)
-            # location_df=session.sql(query).toPandas()
+            query = "SELECT * FROM LOCATION WHERE CITY = '{}'".format(city)
+            location_df=session.sql(query).toPandas()
             location_df=pd.read_csv('location_df.csv')
-            #location_df = location_df[location_df['CITY']==city]
+            location_df = location_df[location_df['CITY']==city]
             city_locations = location_df.merge(df_unique_locations_lat_long, left_on='LOCATION_ID', right_on='Location ID', how='inner')
             city_locations = city_locations[['LOCATION_ID','Latitude','Longitude']]
             city_locations.rename(columns={"Latitude": "LAT"},inplace=True)
