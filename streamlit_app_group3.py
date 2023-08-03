@@ -405,7 +405,7 @@ with tab3: #javier
             input_df['HOUR']=x
             new_df = pd.merge(input_df, weadf,  how='left', left_on=['date','HOUR'], right_on = ['DATE','H']).drop_duplicates()
             
-            sales_pred=session.sql("select * from ANALYTICS.SALES_PREDICTION").to_pandas() #this is the problem.
+            #sales_pred=session.sql("select * from ANALYTICS.SALES_PREDICTION").to_pandas() #this is the problem.
         
             #sales_pred.to_csv('sales_pred.csv')
             sales_pred=pd.read_csv('sales_pred.csv')
