@@ -21,6 +21,7 @@ import openrouteservice as ors
 import operator
 from functools import reduce
 
+st.set_page_config(layout="wide")
 #Loading model and data
 model=joblib.load('model.joblib')
 connection_parameters = { "account": 'hiioykl-ix77996',"user": 'JAVIER',"password": '02B289223r04', "role": "ACCOUNTADMIN","database": "FROSTBYTE_TASTY_BYTES","warehouse": "COMPUTE_WH"}
@@ -48,7 +49,6 @@ st.image('speedybytes_icon2.jpg',  width=600)
 tab1,tab2,tab3,tab4,tab5 = st.tabs(["Routing Map", "One year revenue forecast", "Optimal Shift Timing Recommendation",'tab4','tab5'])
 
 with tab1: #Nathan
-    st.set_page_config(layout="wide")
     X_final_scaled=pd.read_csv('x_final_scaled.csv')
     truck_location_df=pd.read_csv('truck_manager_merged_df.csv')
     
