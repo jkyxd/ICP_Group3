@@ -360,13 +360,13 @@ with tab3: #javier
         
         # Iterate over the public holidays and create the 'public_holiday' column
         input_df['PUBLIC_HOLIDAY'] = 0
-        for holiday in public_holidays:
-            month_mask = input_df['date'].dt.month == holiday['Month']
-            day_mask = input_df['date'].dt.day == holiday['Day']
-            dow_mask = input_df['date'].dt.dayofweek == int(holiday['DOW']) if holiday['DOW'] is not None else True
-            wom_mask = (input_df['date'].dt.day - 1) // 7 + 1 == holiday['WOM'] if holiday['WOM'] is not None else True
-            mask = month_mask & day_mask & dow_mask & wom_mask
-            input_df.loc[mask, 'PUBLIC_HOLIDAY'] = 1
+        # for holiday in public_holidays:
+        #     month_mask = input_df['date'].dt.month == holiday['Month']
+        #     day_mask = input_df['date'].dt.day == holiday['Day']
+        #     dow_mask = input_df['date'].dt.dayofweek == int(holiday['DOW']) if holiday['DOW'] is not None else True
+        #     wom_mask = (input_df['date'].dt.day - 1) // 7 + 1 == holiday['WOM'] if holiday['WOM'] is not None else True
+        #     mask = month_mask & day_mask & dow_mask & wom_mask
+        #     input_df.loc[mask, 'PUBLIC_HOLIDAY'] = 1
     
         # wdf=session.sql("Select * from ANALYTICS.WEATHER_DATA_API")
         # wdf=wdf.withColumn("H",F.substring(wdf["TIME"], 12, 2).cast("integer"))
