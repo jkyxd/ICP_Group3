@@ -407,8 +407,8 @@ with tab3: #javier
             
         #     sales_pred=session.sql("select * from ANALYTICS.SALES_PREDICTION").to_pandas() #this is the problem.
         
-            sales_pred.to_csv('sales_pred.csv')
-            #sales_pred=pd.read_csv('sales_pred.csv')
+            #sales_pred.to_csv('sales_pred.csv')
+            sales_pred=pd.read_csv('sales_pred.csv')
             X_final_scaled=pd.read_csv('x_final_scaled.csv')
             X_final_scaled=X_final_scaled.merge(sales_pred["l_w5i8_DATE"].astype(str).str[:4].rename('YEAR'), left_index=True, right_index=True)
             filtered_df = X_final_scaled[(X_final_scaled['TRUCK_ID'] == truck_id) & (X_final_scaled['YEAR'].astype(int) == input_df['YEAR'][0].astype(int))]
