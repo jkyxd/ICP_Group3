@@ -373,18 +373,18 @@ with tab3: #javier
         # wdf=wdf.withColumn("DATE",F.substring(wdf["TIME"], 0, 10))
         # wdf=wdf.select("WEATHERCODE","LOCATION_ID","H","DATE" )
         # wdf=wdf.to_pandas()
-        wdf=pd.read_csv('wdf.csv')
+        # wdf=pd.read_csv('wdf.csv')
     
-        average_revenue_for_hour=pd.DataFrame(columns=['TRUCK_ID','HOUR','AVERAGE REVENUE PER HOUR'])
+        # average_revenue_for_hour=pd.DataFrame(columns=['TRUCK_ID','HOUR','AVERAGE REVENUE PER HOUR'])
         #TODO for loop testing - change hour, sum1,sum2,weathercode
         for x in range(8,24):
             # session.use_schema("RAW_POS")
             # query = "SELECT * FROM TRUCK WHERE TRUCK_ID = '{}'".format(truck_id)
             # truck_df=session.sql(query).toPandas()
-            truck_df=pd.read_csv('truck_df.csv')
-            truck_df=(truck_df[truck_df['TRUCK_ID']==truck_id])
+            # truck_df=pd.read_csv('truck_df.csv')
+            # truck_df=(truck_df[truck_df['TRUCK_ID']==truck_id])
             
-            city = truck_df['PRIMARY_CITY'].iloc[0]
+            # city = truck_df['PRIMARY_CITY'].iloc[0]
         
             # # query = "SELECT * FROM LOCATION WHERE CITY = '{}'".format(city)
             # # location_df=session.sql(query).toPandas()
@@ -460,20 +460,20 @@ with tab3: #javier
         
         
         # Initialize variables
-        average_revenue_for_hour['rolling_average']=0
-        max_revenue = 0
-        optimal_hours = []
-        for i in range(len(average_revenue_for_hour) - 4):
+        # average_revenue_for_hour['rolling_average']=0
+        # max_revenue = 0
+        # optimal_hours = []
+        # for i in range(len(average_revenue_for_hour) - 4):
             
-            total_revenue=0
-            # Calculate the total revenue for the current 5-hour window
-            total_revenue = average_revenue_for_hour.loc[i:i+4, 'AVERAGE REVENUE PER HOUR'].sum()
-            average_revenue_for_hour['rolling_average'].loc[i] = total_revenue
+        #     total_revenue=0
+        #     # Calculate the total revenue for the current 5-hour window
+        #     total_revenue = average_revenue_for_hour.loc[i:i+4, 'AVERAGE REVENUE PER HOUR'].sum()
+        #     average_revenue_for_hour['rolling_average'].loc[i] = total_revenue
             
-             # Check if the current total revenue is greater than the previous maximum
-            if total_revenue > max_revenue:
-                max_revenue = total_revenue
-                optimal_hours = average_revenue_for_hour.loc[i:i+4, 'HOUR'].tolist()
+        #      # Check if the current total revenue is greater than the previous maximum
+        #     if total_revenue > max_revenue:
+        #         max_revenue = total_revenue
+        #         optimal_hours = average_revenue_for_hour.loc[i:i+4, 'HOUR'].tolist()
         values=[1,2]
 
 
