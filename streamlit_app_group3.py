@@ -360,13 +360,13 @@ with tab3: #javier
         
         # Iterate over the public holidays and create the 'public_holiday' column
         input_df['PUBLIC_HOLIDAY'] = 0
-        # for holiday in public_holidays:
-        #     month_mask = input_df['date'].dt.month == holiday['Month']
-        #     day_mask = input_df['date'].dt.day == holiday['Day']
-        #     dow_mask = input_df['date'].dt.dayofweek == int(holiday['DOW']) if holiday['DOW'] is not None else True
-        #     wom_mask = (input_df['date'].dt.day - 1) // 7 + 1 == holiday['WOM'] if holiday['WOM'] is not None else True
-        #     mask = month_mask & day_mask & dow_mask & wom_mask
-        #     input_df.loc[mask, 'PUBLIC_HOLIDAY'] = 1
+        for holiday in public_holidays:
+            month_mask = input_df['date'].dt.month == holiday['Month']
+            day_mask = input_df['date'].dt.day == holiday['Day']
+            dow_mask = input_df['date'].dt.dayofweek == int(holiday['DOW']) if holiday['DOW'] is not None else True
+            wom_mask = (input_df['date'].dt.day - 1) // 7 + 1 == holiday['WOM'] if holiday['WOM'] is not None else True
+            mask = month_mask & day_mask & dow_mask & wom_mask
+            input_df.loc[mask, 'PUBLIC_HOLIDAY'] = 1
     
         # wdf=session.sql("Select * from ANALYTICS.WEATHER_DATA_API")
         # wdf=wdf.withColumn("H",F.substring(wdf["TIME"], 12, 2).cast("integer"))
@@ -386,14 +386,14 @@ with tab3: #javier
             
             city = truck_df['PRIMARY_CITY'].iloc[0]
         
-            # query = "SELECT * FROM LOCATION WHERE CITY = '{}'".format(city)
-            # location_df=session.sql(query).toPandas()
-            location_df=pd.read_csv('location_df.csv')
-            location_df = location_df[location_df['CITY']==city]
-            city_locations = location_df.merge(df_unique_locations_lat_long, left_on='LOCATION_ID', right_on='Location ID', how='inner')
-            city_locations = city_locations[['LOCATION_ID','Latitude','Longitude']]
-            city_locations.rename(columns={"Latitude": "LAT"},inplace=True)
-            city_locations.rename(columns={"Longitude": "LONG"},inplace=True)
+            # # query = "SELECT * FROM LOCATION WHERE CITY = '{}'".format(city)
+            # # location_df=session.sql(query).toPandas()
+            # location_df=pd.read_csv('location_df.csv')
+            # location_df = location_df[location_df['CITY']==city]
+            # city_locations = location_df.merge(df_unique_locations_lat_long, left_on='LOCATION_ID', right_on='Location ID', how='inner')
+            # city_locations = city_locations[['LOCATION_ID','Latitude','Longitude']]
+            # city_locations.rename(columns={"Latitude": "LAT"},inplace=True)
+            # city_locations.rename(columns={"Longitude": "LONG"},inplace=True)
         
         #     loc_checker = city_locations.copy()
         #     loc_checker['DATE'] = date
