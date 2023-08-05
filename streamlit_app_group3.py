@@ -942,7 +942,7 @@ with tab2: #minh
             st.write("This tab presents food truck revenue trend forecasts, including optimal route predictions and revenue estimates on a daily basis for the selected time-frame. It allows users to view monthly graphs illustrating revenue and revenue/hr per month and also offers a comparison with the previous year's and original year's revenue data without the optimized routing algorithm. Additionally, users can observe the machine learning model's performance metrics and explore the feature importance.")
     
             # Input fields for truck data
-            st.sidebar.title('Input Section to determine optimal routing and forecast time-frame')
+            st.title('Input Section to determine optimal routing and forecast time-frame')
     
             # Dictionary to map truck details to their IDs
             truck_details_to_id = {
@@ -958,7 +958,7 @@ with tab2: #minh
             truck_details_list = list(truck_details_to_id.keys())
     
             # Selectbox widget to choose a truck detail
-            selected_truck_detail = st.sidebar.selectbox("Select Food Truck (ID)", truck_details_list)
+            selected_truck_detail = st.selectbox("Select Food Truck (ID)", truck_details_list)
     
             # Get the corresponding truck ID using the dictionary
             truck_id = truck_details_to_id[selected_truck_detail]
@@ -968,8 +968,7 @@ with tab2: #minh
             max_date = datetime.date(2022, 10, 31)
     
             # Date range input widget to choose the forecast period
-            st.sidebar.write('For Jan 2020 to Oct 2022 only')
-            date_range = st.sidebar.date_input('Select a date range forecast (only month and year)', (min_date, max_date))
+            date_range = st.date_input('Select a date range forecast (only month and year) For Jan 2020 to Oct 2022 only', (min_date, max_date))
     
             # Validate the selected date range
             if len(date_range) == 1:
@@ -977,12 +976,12 @@ with tab2: #minh
     
             # Enforce the minimum 3 months date range
             if date_range[1] - date_range[0] < datetime.timedelta(days=3 * 30):
-                st.sidebar.warning("Please select a date range with a minimum of 3 months.")
+                st.warning("Please select a date range with a minimum of 3 months.")
                 button_disabled = True
     
             # Ensure the range has at most 12 months
             if date_range[1] - date_range[0] > datetime.timedelta(days=12 * 30):
-                st.sidebar.warning("Please select a date range with a maximum of 12 months.")
+                st.warning("Please select a date range with a maximum of 12 months.")
                 button_disabled = True
                 # Adjust the range to have at most 12 months
                 end_date = min(date_range[0] + datetime.timedelta(days=12 * 30), max_date)
@@ -990,11 +989,11 @@ with tab2: #minh
     
             # Limit the user from selecting dates beyond the minimum and maximum dates
             if date_range[0] < min_date:
-                st.sidebar.warning("Please select a start date within the allowed range.")
+                st.warning("Please select a start date within the allowed range.")
                 button_disabled = True
                 date_range = (min_date, date_range[1])
             elif date_range[1] > max_date:
-                st.sidebar.warning("Please select an end date within the allowed range.")
+                st.warning("Please select an end date within the allowed range.")
                 button_disabled = True
                 date_range = (date_range[0], max_date)
     
@@ -1005,11 +1004,11 @@ with tab2: #minh
             end_month = date_range[1].month
     
             # Slider widget to select working hours range
-            working_hours = st.sidebar.slider('Select working hours (24h-Notation)', 1, 24, (8, 12))
+            working_hours = st.slider('Select working hours (24h-Notation)', 1, 24, (8, 12))
     
             # Ensure the range has at least 2 hours
             if working_hours[1] - working_hours[0] < 2:
-                st.sidebar.warning("Please select a range with at least 2 hours.")
+                st.warning("Please select a range with at least 2 hours.")
                 button_disabled = True
                 # Adjust the range to have at least 2 hours
                 end_hour = min(working_hours[0] + 2, 23)
@@ -1027,16 +1026,16 @@ with tab2: #minh
             work_hours = end_hour - start_hour
     
             # Number input widget to select the number of locations
-            num_of_locs = st.sidebar.number_input("Number of Locations", min_value=1, value=2, max_value=work_hours)
+            num_of_locs = st.number_input("Number of Locations", min_value=1, value=2, max_value=work_hours)
     
             # Validate the number of locations
             if num_of_locs > 8:
-                st.sidebar.warning("Please select a smaller number of locations (maximum 8)")
+                st.warning("Please select a smaller number of locations (maximum 8)")
                 button_disabled = True
                 num_of_locs = 8
     
             # Number input widget to select the maximum travel distance for each location
-            each_location_travel_distance = st.sidebar.number_input("Each Location Max Travel Distance (km)", min_value=0, value=5, max_value=50)
+            each_location_travel_distance = st.number_input("Each Location Max Travel Distance (km)", min_value=0, value=5, max_value=50)
     
             # Dictionary to map weekday names to integers
             weekdays_dict = {'Monday': 0, 'Tuesday': 1, 'Wednesday': 2, 'Thursday': 3, 'Friday': 4, 'Saturday': 5, 'Sunday': 6}
@@ -1045,34 +1044,34 @@ with tab2: #minh
             weekdays_names = list(weekdays_dict.keys())
     
             # Multi-select widget to select work days
-            selected_weekdays_names = st.sidebar.multiselect("Select Work Days", weekdays_names, default=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'])
+            selected_weekdays_names = st.multiselect("Select Work Days", weekdays_names, default=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'])
     
             # Convert selected weekday names to corresponding integer values
             work_days = [weekdays_dict[name] for name in selected_weekdays_names]
     
             # If no weekdays are selected, default to all weekdays (Monday=0, ..., Friday=4)
             if not work_days:
-                st.sidebar.warning("Please select at least one weekday")
+                st.warning("Please select at least one weekday")
                 work_days = [0, 1, 2, 3, 4]
                 button_disabled = True
     
             # Date input widget to select a specific date for the optimal route
-            route_date = st.sidebar.date_input('Select a specific date to see its optimal route', date_range[0])
+            route_date = st.date_input('Select a specific date to see its optimal route', date_range[0])
     
             # Check if the selected date is within the allowed range
             if route_date < date_range[0]:
                 # Display a warning message and adjust the date to the start of the date range
-                st.sidebar.warning("Please select a start date within the allowed range.")
+                st.warning("Please select a start date within the allowed range.")
                 route_date = date_range[0]
                 button_disabled = True
             elif route_date > date_range[1]:
                 # Display a warning message and adjust the date to the end of the date range
-                st.sidebar.warning("Please select an end date within the allowed range.")
+                st.warning("Please select an end date within the allowed range.")
                 route_date = date_range[1]
                 button_disabled = True
             elif route_date.weekday() not in work_days:
                 # Display a warning message if the selected date is not a working weekday
-                st.sidebar.warning("Please select a date that is during one of your selected working weekdays.")
+                st.warning("Please select a date that is during one of your selected working weekdays.")
                 route_date = date_range[0]
                 button_disabled = True
                 
