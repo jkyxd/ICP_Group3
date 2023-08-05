@@ -967,7 +967,7 @@ with tab2: #minh
         max_date = datetime.date(2022, 10, 31)
 
         # Date range input widget to choose the forecast period
-        st.write('For Jan 2020 to Oct 2022 only')
+        #st.write('For Jan 2020 to Oct 2022 only')
         date_range = st.date_input('Select a date range forecast (only month and year)', (min_date, max_date))
 
         # Validate the selected date range
