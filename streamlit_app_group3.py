@@ -1348,7 +1348,8 @@ with tab3: #javier
     def find_optimal_hour(truck_id,date,no_of_hours):
         # user input
         
-        datetime_object = datetime.strptime(date, '%Y-%m-%d')
+        datetime_object = datetime.datetime.strptime(date, '%Y-%m-%d')
+        
         
         input_df = pd.DataFrame({'TRUCK_ID': [truck_id],'date': [date]})
     
@@ -1401,16 +1402,26 @@ with tab3: #javier
         average_revenue_for_hour=pd.DataFrame(columns=['TRUCK_ID','HOUR','AVERAGE REVENUE PER HOUR'])
         #TODO for loop testing - change hour, sum1,sum2,weathercode
         for x in range(8,24):
-            # session.use_schema("RAW_POS")
-            # query = "SELECT * FROM TRUCK WHERE TRUCK_ID = '{}'".format(truck_id)
-            # truck_df=session.sql(query).toPandas()
+            #session.use_schema("RAW_POS")
+            #query = "SELECT * FROM TRUCK WHERE TRUCK_ID = '{}'".format(truck_id)
+            #query = "SELECT * FROM TRUCK"
+            #truck_df=session.sql(query).toPandas()
+            #truck_df.head(30)
+            #truck_df.to_csv('truck_df.csv',index=False)
             truck_df=pd.read_csv('truck_df.csv')
-            truck_df=(truck_df[truck_df['TRUCK_ID']==truck_id])
-            
+            truck_df=truck_df[truck_df['TRUCK_ID']==truck_id]
+            truck_df=truck_df.reset_index()
+            truck_df=truck_df.drop(['index'],axis=1)
+    
+    
             city = truck_df['PRIMARY_CITY'].iloc[0]
         
-            #  query = "SELECT * FROM LOCATION WHERE CITY = '{}'".format(city)
-            #  location_df=session.sql(query).toPandas()
+            #query = "SELECT * FROM LOCATION WHERE CITY = '{}'".format(city)
+            #session.use_schema('RAW_POS')
+            #query = "SELECT * FROM LOCATION"
+            #location_df=session.sql(query).toPandas()
+            #location_df.head()
+            #location_df.to_csv('location_df.csv',index=False)
             location_df=pd.read_csv('location_df.csv')
             location_df = location_df[location_df['CITY']==city]
             city_locations = location_df.merge(df_unique_locations_lat_long, left_on='LOCATION_ID', right_on='Location ID', how='inner')
@@ -1428,7 +1439,7 @@ with tab3: #javier
             input_df['HOUR']=x
             new_df = pd.merge(input_df, weadf,  how='left', left_on=['date','HOUR'], right_on = ['DATE','H']).drop_duplicates()
             
-        #     sales_pred=session.sql("select * from ANALYTICS.SALES_PREDICTION").to_pandas() #this is the problem.
+            #sales_pred=session.sql("select * from ANALYTICS.SALES_PREDICTION").to_pandas() #this is the problem.
         
             #sales_pred.to_csv('sales_pred.csv')
             sales_pred=pd.read_csv('sales_pred.csv')
@@ -1436,11 +1447,11 @@ with tab3: #javier
             X_final_scaled=X_final_scaled.merge(sales_pred["l_w5i8_DATE"].astype(str).str[:4].rename('YEAR'), left_index=True, right_index=True)
             filtered_df = X_final_scaled[(X_final_scaled['TRUCK_ID'] == truck_id) & (X_final_scaled['YEAR'].astype(int) == input_df['YEAR'][0].astype(int))]
             filtered_df = filtered_df[['TRUCK_ID', 'MENU_TYPE_GYROS_ENCODED', 'MENU_TYPE_CREPES_ENCODED', 
-                                     'MENU_TYPE_BBQ_ENCODED', 'MENU_TYPE_SANDWICHES_ENCODED', 'MENU_TYPE_Mac & Cheese_encoded', 'MENU_TYPE_POUTINE_ENCODED', 
-                                     'MENU_TYPE_ETHIOPIAN_ENCODED', 'MENU_TYPE_TACOS_ENCODED', 'MENU_TYPE_Ice Cream_encoded', 'MENU_TYPE_Hot Dogs_encoded', 'MENU_TYPE_CHINESE_ENCODED', 
-                                     'MENU_TYPE_Grilled Cheese_encoded', 'MENU_TYPE_VEGETARIAN_ENCODED', 'MENU_TYPE_INDIAN_ENCODED', 'MENU_TYPE_RAMEN_ENCODED', 'CITY_SEATTLE_ENCODED', 
-                                     'CITY_DENVER_ENCODED', 'CITY_San Mateo_encoded', 'CITY_New York City_encoded', 'CITY_BOSTON_ENCODED', 'REGION_NY_ENCODED', 'REGION_MA_ENCODED', 
-                                     'REGION_CO_ENCODED', 'REGION_WA_ENCODED', 'REGION_CA_ENCODED']]
+                                    'MENU_TYPE_BBQ_ENCODED', 'MENU_TYPE_SANDWICHES_ENCODED', 'MENU_TYPE_Mac & Cheese_encoded', 'MENU_TYPE_POUTINE_ENCODED', 
+                                    'MENU_TYPE_ETHIOPIAN_ENCODED', 'MENU_TYPE_TACOS_ENCODED', 'MENU_TYPE_Ice Cream_encoded', 'MENU_TYPE_Hot Dogs_encoded', 'MENU_TYPE_CHINESE_ENCODED', 
+                                    'MENU_TYPE_Grilled Cheese_encoded', 'MENU_TYPE_VEGETARIAN_ENCODED', 'MENU_TYPE_INDIAN_ENCODED', 'MENU_TYPE_RAMEN_ENCODED', 'CITY_SEATTLE_ENCODED', 
+                                    'CITY_DENVER_ENCODED', 'CITY_San Mateo_encoded', 'CITY_New York City_encoded', 'CITY_BOSTON_ENCODED', 'REGION_NY_ENCODED', 'REGION_MA_ENCODED', 
+                                    'REGION_CO_ENCODED', 'REGION_WA_ENCODED', 'REGION_CA_ENCODED']]
             merge_df = new_df.merge(filtered_df, left_on='TRUCK_ID', right_on='TRUCK_ID', how='inner').drop_duplicates()
         
             filtered_df = X_final_scaled[(X_final_scaled['TRUCK_ID'] == truck_id) & (X_final_scaled['HOUR'] == x) & (X_final_scaled['YEAR'].astype(int) == input_df['YEAR'][0].astype(int))]
@@ -1455,7 +1466,7 @@ with tab3: #javier
             filtered_df = filtered_df[['TRUCK_ID', 'MONTH','DAY', 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE', 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE', 'YEAR']]
             filtered_df['YEAR'] = filtered_df['YEAR'].astype(int)
         
-             #Perform the left merge based on truck_id and date
+            #Perform the left merge based on truck_id and date
             merged_df = pd.merge(merge_df, filtered_df, on=['TRUCK_ID', 'YEAR', 'MONTH', 'DAY'], how='left').drop_duplicates()
             merged_df = merged_df.sort_values(by=['TRUCK_ID', 'YEAR', 'MONTH', 'DAY'])
         
@@ -1468,6 +1479,7 @@ with tab3: #javier
         
             # Reset the index of the merged DataFrame
             merged_df = merged_df.reset_index(drop=True)
+            merged_df=merged_df.dropna(subset=['LOCATION_ID'])
             merged_df['LOCATION_ID'] = merged_df['LOCATION_ID'].astype(int)
             initial_df_position = merged_df[['TRUCK_ID', 'MONTH', 'HOUR', 'DOW', 'DAY', 'PUBLIC_HOLIDAY', 'LAT', 'LONG', 'LOCATION_ID', 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE', 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE', 'WEATHERCODE', 'MENU_TYPE_GYROS_ENCODED', 'MENU_TYPE_CREPES_ENCODED', 'MENU_TYPE_BBQ_ENCODED', 'MENU_TYPE_SANDWICHES_ENCODED', 'MENU_TYPE_Mac & Cheese_encoded', 'MENU_TYPE_POUTINE_ENCODED', 'MENU_TYPE_ETHIOPIAN_ENCODED', 'MENU_TYPE_TACOS_ENCODED', 'MENU_TYPE_Ice Cream_encoded', 'MENU_TYPE_Hot Dogs_encoded', 'MENU_TYPE_CHINESE_ENCODED', 'MENU_TYPE_Grilled Cheese_encoded', 'MENU_TYPE_VEGETARIAN_ENCODED', 'MENU_TYPE_INDIAN_ENCODED', 'MENU_TYPE_RAMEN_ENCODED', 'CITY_SEATTLE_ENCODED', 'CITY_DENVER_ENCODED', 'CITY_San Mateo_encoded', 'CITY_New York City_encoded', 'CITY_BOSTON_ENCODED', 'REGION_NY_ENCODED', 'REGION_MA_ENCODED', 'REGION_CO_ENCODED', 'REGION_WA_ENCODED', 'REGION_CA_ENCODED']]
         
@@ -1497,7 +1509,7 @@ with tab3: #javier
             if total_revenue > max_revenue:
                 max_revenue = total_revenue
                 optimal_hours = average_revenue_for_hour.loc[i:i+4, 'HOUR'].tolist()
-        values=[1,2]
+        values=[optimal_hours,max_revenue]
 
 
 
