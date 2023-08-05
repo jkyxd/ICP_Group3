@@ -625,7 +625,6 @@ with tab2: #minh
             print(f"An error occurred while calculating shift hours: {e}")
             return []
     
-    import math
     def haversine_distance(df, max_distance):
         """
         Calculate the haversine distance between two sets of latitude and longitude coordinates.
@@ -930,9 +929,8 @@ with tab2: #minh
             print(f"An error occurred while loading the model from the file: {e}")
     
     from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-    import numpy as np
     from sklearn.model_selection import train_test_split
-    import streamlit as st
+    import numpy as np
     # Streamlit web app code
     def main():
         try:
