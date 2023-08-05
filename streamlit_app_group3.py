@@ -1249,6 +1249,7 @@ with tab2: #minh
     
                 # Split the dataset into training and testing datasets
                 X_training, X_holdout, y_training, y_holdout = train_test_split(X, y, test_size=0.2, random_state=42)
+                X_train, X_test, y_train, y_test = train_test_split(X_training, y_training, test_size=0.2, random_state=42)
     
                 # Create a DataFrame with holdout values and predicted values
                 df_predictions = X_holdout.copy()
@@ -1273,6 +1274,17 @@ with tab2: #minh
                 mse = mean_squared_error(y_true, y_pred)
                 rmse = mean_squared_error(y_true, y_pred, squared=False)
                 r2 = r2_score(y_true, y_pred)
+
+                # Evaluate the model
+                st.subheader('Model Performance on Test data')
+                st.write('Train MSE is: ', mean_squared_error(y_pred, y_train))
+                st.write('Test MSE is: ', mean_squared_error(y_pred, y_test))
+                st.write('Train RMSE is: ',  math.sqrt(mean_squared_error(y_pred, y_train)))
+                st.write('Test RMSE is: ', math.sqrt(mean_squared_error(y_pred, y_test)))
+                st.write('Train MAE is: ', mean_absolute_error(y_pred, y_train))
+                st.write('Test MAE is: ', mean_absolute_error(y_pred, y_test))
+                st.write('Train R2 is: ', r2_score(y_pred, y_train))
+                st.write('Test R2 is: ', r2_score(y_pred, y_test))
     
                 # Display the performance metrics
                 st.subheader('Model Performance on Holdout data')
