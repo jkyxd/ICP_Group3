@@ -930,369 +930,376 @@ with tab2: #minh
     from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
     from sklearn.model_selection import train_test_split
     import numpy as np
-    import streamlit as st
     # Streamlit web app code
-    try:
-        st.title("Food Truck Revenue Forecast Trend")
-
-        # Disable button if there's a warning message
-        button_disabled = False
-
-        # Overview of the web app tab
-        st.write("This tab presents food truck revenue trend forecasts, including optimal route predictions and revenue estimates on a daily basis for the selected time-frame. It allows users to view monthly graphs illustrating revenue and revenue/hr per month and also offers a comparison with the previous year's and original year's revenue data without the optimized routing algorithm. Additionally, users can observe the machine learning model's performance metrics and explore the feature importance.")
-
-        # Input fields for truck data
-        st.sidebar.title('Input Section to determine optimal routing and forecast time-frame')
-
-        # Dictionary to map truck details to their IDs
-        truck_details_to_id = {
-            "Cheeky Greek, Gyros, Denver, David Miller (27)": 27,
-            "Peking Truck, Chinese, Denver, David Miller (28)": 28,
-            "Peking Truck, Chinese, Seattle, Brittany Williams (43)": 43,
-            "Nani's Kitchen, Indian, Seattle, Mary Sanders (44)": 44,
-            "Freezing Point, Ice Cream, Boston, Brittany Williams (46)": 46,
-            "Smoky BBQ, BBQ, Boston, Mary Sanders (47)": 47
-        }
-
-        # Predefined list for truck details
-        truck_details_list = list(truck_details_to_id.keys())
-
-        # Selectbox widget to choose a truck detail
-        selected_truck_detail = st.sidebar.selectbox("Select Food Truck (ID)", truck_details_list)
-
-        # Get the corresponding truck ID using the dictionary
-        truck_id = truck_details_to_id[selected_truck_detail]
-
-        # Define the minimum and maximum allowed date range
-        min_date = datetime.date(2020, 1, 1)
-        max_date = datetime.date(2022, 10, 31)
-
-        # Date range input widget to choose the forecast period
-        st.sidebar.write('For Jan 2020 to Oct 2022 only')
-        date_range = st.sidebar.date_input('Select a date range forecast (only month and year)', (min_date, max_date))
-
-        # Validate the selected date range
-        if len(date_range) == 1:
-            date_range = (date_range[0], date_range[0])  # Fix for handling a single date selection
-
-        # Enforce the minimum 3 months date range
-        if date_range[1] - date_range[0] < datetime.timedelta(days=3 * 30):
-            st.sidebar.warning("Please select a date range with a minimum of 3 months.")
-            button_disabled = True
-
-        # Ensure the range has at most 12 months
-        if date_range[1] - date_range[0] > datetime.timedelta(days=12 * 30):
-            st.sidebar.warning("Please select a date range with a maximum of 12 months.")
-            button_disabled = True
-            # Adjust the range to have at most 12 months
-            end_date = min(date_range[0] + datetime.timedelta(days=12 * 30), max_date)
-            date_range = (date_range[0], end_date)
-
-        # Limit the user from selecting dates beyond the minimum and maximum dates
-        if date_range[0] < min_date:
-            st.sidebar.warning("Please select a start date within the allowed range.")
-            button_disabled = True
-            date_range = (min_date, date_range[1])
-        elif date_range[1] > max_date:
-            st.sidebar.warning("Please select an end date within the allowed range.")
-            button_disabled = True
-            date_range = (date_range[0], max_date)
-
-        # Extract the start and end year and month from the selected date range
-        start_year = date_range[0].year
-        start_month = date_range[0].month
-        end_year = date_range[1].year
-        end_month = date_range[1].month
-
-        # Display the selected truck id and date range
-        st.subheader("Selected Truck ID: {}".format(truck_id))
-        st.subheader("Selected date range: {} to {}".format(date_range[0].strftime("%B %Y"), date_range[1].strftime("%B %Y")))
-
-        # Slider widget to select working hours range
-        working_hours = st.sidebar.slider('Select working hours (24h-Notation)', 1, 24, (8, 12))
-
-        # Ensure the range has at least 2 hours
-        if working_hours[1] - working_hours[0] < 2:
-            st.sidebar.warning("Please select a range with at least 2 hours.")
-            button_disabled = True
-            # Adjust the range to have at least 2 hours
-            end_hour = min(working_hours[0] + 2, 23)
-            working_hours = (working_hours[0], end_hour)
-
-        # Extract the start and end hour from the selected working hours range
-        start_hour = int(working_hours[0])
-        end_hour = int(working_hours[1])
-
-        # Handle special case when end hour is 24 (midnight)
-        if end_hour == 24:
-            end_hour = 0
-
-        # Calculate total working hours
-        work_hours = end_hour - start_hour
-
-        # Number input widget to select the number of locations
-        num_of_locs = st.sidebar.number_input("Number of Locations", min_value=1, value=2, max_value=work_hours)
-
-        # Validate the number of locations
-        if num_of_locs > 8:
-            st.sidebar.warning("Please select a smaller number of locations (maximum 8)")
-            button_disabled = True
-            num_of_locs = 8
-
-        # Number input widget to select the maximum travel distance for each location
-        each_location_travel_distance = st.sidebar.number_input("Each Location Max Travel Distance (km)", min_value=0, value=5, max_value=50)
-
-        # Dictionary to map weekday names to integers
-        weekdays_dict = {'Monday': 0, 'Tuesday': 1, 'Wednesday': 2, 'Thursday': 3, 'Friday': 4, 'Saturday': 5, 'Sunday': 6}
-
-        # List of weekday names
-        weekdays_names = list(weekdays_dict.keys())
-
-        # Multi-select widget to select work days
-        selected_weekdays_names = st.sidebar.multiselect("Select Work Days", weekdays_names, default=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'])
-
-        # Convert selected weekday names to corresponding integer values
-        work_days = [weekdays_dict[name] for name in selected_weekdays_names]
-
-        # If no weekdays are selected, default to all weekdays (Monday=0, ..., Friday=4)
-        if not work_days:
-            st.sidebar.warning("Please select at least one weekday")
-            work_days = [0, 1, 2, 3, 4]
-            button_disabled = True
-
-        # Date input widget to select a specific date for the optimal route
-        route_date = st.sidebar.date_input('Select a specific date to see its optimal route', date_range[0])
-
-        # Check if the selected date is within the allowed range
-        if route_date < date_range[0]:
-            # Display a warning message and adjust the date to the start of the date range
-            st.sidebar.warning("Please select a start date within the allowed range.")
-            route_date = date_range[0]
-            button_disabled = True
-        elif route_date > date_range[1]:
-            # Display a warning message and adjust the date to the end of the date range
-            st.sidebar.warning("Please select an end date within the allowed range.")
-            route_date = date_range[1]
-            button_disabled = True
-        elif route_date.weekday() not in work_days:
-            # Display a warning message if the selected date is not a working weekday
-            st.sidebar.warning("Please select a date that is during one of your selected working weekdays.")
-            route_date = date_range[0]
-            button_disabled = True
-    except Exception as e:
-        print(f"An error occurred with the input section: {e}")
-        
-    try:
-        # Process the inputs and display the results when the "Process Data" button is clicked
-        if st.button("Forecast Data (Main)", disabled=button_disabled):
-            # Calculate the maximum total travel distance based on each location's max travel distance and the number of locations
-            max_total_travel_distance = each_location_travel_distance * num_of_locs
-
-            # Generate the list of months within the selected date range
-            months_list = generate_month_list(start_month, start_year, end_month, end_year)
-
-            # Convert the selected working hours to a list of hours
-            hours_list = list(range(start_hour, end_hour + 1))
-
-            # Initialize variables
-            year = start_year
-            shift_hours_list = get_shift_hours(start_hour, end_hour, num_of_locs)
-            month_value_list = []
-            final_df = pd.DataFrame()
-
-            # DataFrames for storing original and previous year's revenue information
-            original_df = pd.DataFrame()
-            previous_df = pd.DataFrame()
-
-            # Retrieve sales data for the selected truck from the Snowflake database
-            session.use_schema("ANALYTICS")
-            query = 'Select * from "Sales_Forecast_Training_Data" WHERE TRUCK_ID = {}'.format(truck_id)
-            X_final_scaled = session.sql(query).to_pandas()
-            X_final_scaled.rename(columns={"Profit": "Revenue"}, inplace=True)
-            sales_pred = session.sql("select * from ANALYTICS.SALES_PREDICTION").to_pandas()
-            X_final_scaled = X_final_scaled.merge(sales_pred["l_w5i8_DATE"].astype(str).str[:4].rename('YEAR'), left_index=True, right_index=True)
-            X_final_scaled = X_final_scaled[['Revenue', 'YEAR', 'MONTH', 'DAY', 'HOUR']]
-
-            for month in months_list:
-                # Adjust the year if the date range spans multiple years
-                if start_year != end_year:
-                    if month == 1:
-                        year += 1
-
-                # Fetch input data for the current month, hours, and working weekdays from the Snowflake database
-                query = 'SELECT * FROM "Trend_Input_Data" WHERE TRUCK_ID = {} AND YEAR = {} AND MONTH = {} AND HOUR IN ({}) AND DOW IN ({});'.format(
-                    truck_id, year, month, ', '.join(map(str, hours_list)), ', '.join(map(str, work_days)))
-                input_data = session.sql(query).to_pandas()
-
-                # Make predictions using the loaded machine learning model for the current input data
-                predict_df = input_data[['TRUCK_ID', 'MONTH', 'HOUR', 'DOW', 'DAY', 'PUBLIC_HOLIDAY', 'LAT', 'LONG', 'LOCATION_ID', 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE', 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE', 'WEATHERCODE', 'MENU_TYPE_GYROS_ENCODED', 'MENU_TYPE_CREPES_ENCODED', 'MENU_TYPE_BBQ_ENCODED', 'MENU_TYPE_SANDWICHES_ENCODED', 'MENU_TYPE_Mac & Cheese_encoded', 'MENU_TYPE_POUTINE_ENCODED', 'MENU_TYPE_ETHIOPIAN_ENCODED', 'MENU_TYPE_TACOS_ENCODED', 'MENU_TYPE_Ice Cream_encoded', 'MENU_TYPE_Hot Dogs_encoded', 'MENU_TYPE_CHINESE_ENCODED', 'MENU_TYPE_Grilled Cheese_encoded', 'MENU_TYPE_VEGETARIAN_ENCODED', 'MENU_TYPE_INDIAN_ENCODED', 'MENU_TYPE_RAMEN_ENCODED', 'CITY_SEATTLE_ENCODED', 'CITY_DENVER_ENCODED', 'CITY_San Mateo_encoded', 'CITY_New York City_encoded', 'CITY_BOSTON_ENCODED', 'REGION_NY_ENCODED', 'REGION_MA_ENCODED', 'REGION_CO_ENCODED', 'REGION_WA_ENCODED', 'REGION_CA_ENCODED']]
-                predict_df['Predicted'] = xgb.predict(predict_df)
-
-                # Initialize a list to store DataFrames for each shift's predicted values
-                shifts_df_list = []
-                value = 0
+    def main():
+        try:
+            st.title("Food Truck Revenue Forecast Trend")
+    
+            # Disable button if there's a warning message
+            button_disabled = False
+    
+            # Overview of the web app tab
+            st.write("This tab presents food truck revenue trend forecasts, including optimal route predictions and revenue estimates on a daily basis for the selected time-frame. It allows users to view monthly graphs illustrating revenue and revenue/hr per month and also offers a comparison with the previous year's and original year's revenue data without the optimized routing algorithm. Additionally, users can observe the machine learning model's performance metrics and explore the feature importance.")
+    
+            # Input fields for truck data
+            st.sidebar.title('Input Section to determine optimal routing and forecast time-frame')
+    
+            # Dictionary to map truck details to their IDs
+            truck_details_to_id = {
+                "Cheeky Greek, Gyros, Denver, David Miller (27)": 27,
+                "Peking Truck, Chinese, Denver, David Miller (28)": 28,
+                "Peking Truck, Chinese, Seattle, Brittany Williams (43)": 43,
+                "Nani's Kitchen, Indian, Seattle, Mary Sanders (44)": 44,
+                "Freezing Point, Ice Cream, Boston, Brittany Williams (46)": 46,
+                "Smoky BBQ, BBQ, Boston, Mary Sanders (47)": 47
+            }
+    
+            # Predefined list for truck details
+            truck_details_list = list(truck_details_to_id.keys())
+    
+            # Selectbox widget to choose a truck detail
+            selected_truck_detail = st.sidebar.selectbox("Select Food Truck (ID)", truck_details_list)
+    
+            # Get the corresponding truck ID using the dictionary
+            truck_id = truck_details_to_id[selected_truck_detail]
+    
+            # Define the minimum and maximum allowed date range
+            min_date = datetime.date(2020, 1, 1)
+            max_date = datetime.date(2022, 10, 31)
+    
+            # Date range input widget to choose the forecast period
+            st.sidebar.write('For Jan 2020 to Oct 2022 only')
+            date_range = st.sidebar.date_input('Select a date range forecast (only month and year)', (min_date, max_date))
+    
+            # Validate the selected date range
+            if len(date_range) == 1:
+                date_range = (date_range[0], date_range[0])  # Fix for handling a single date selection
+    
+            # Enforce the minimum 3 months date range
+            if date_range[1] - date_range[0] < datetime.timedelta(days=3 * 30):
+                st.sidebar.warning("Please select a date range with a minimum of 3 months.")
+                button_disabled = True
+    
+            # Ensure the range has at most 12 months
+            if date_range[1] - date_range[0] > datetime.timedelta(days=12 * 30):
+                st.sidebar.warning("Please select a date range with a maximum of 12 months.")
+                button_disabled = True
+                # Adjust the range to have at most 12 months
+                end_date = min(date_range[0] + datetime.timedelta(days=12 * 30), max_date)
+                date_range = (date_range[0], end_date)
+    
+            # Limit the user from selecting dates beyond the minimum and maximum dates
+            if date_range[0] < min_date:
+                st.sidebar.warning("Please select a start date within the allowed range.")
+                button_disabled = True
+                date_range = (min_date, date_range[1])
+            elif date_range[1] > max_date:
+                st.sidebar.warning("Please select an end date within the allowed range.")
+                button_disabled = True
+                date_range = (date_range[0], max_date)
+    
+            # Extract the start and end year and month from the selected date range
+            start_year = date_range[0].year
+            start_month = date_range[0].month
+            end_year = date_range[1].year
+            end_month = date_range[1].month
+    
+            # Slider widget to select working hours range
+            working_hours = st.sidebar.slider('Select working hours (24h-Notation)', 1, 24, (8, 12))
+    
+            # Ensure the range has at least 2 hours
+            if working_hours[1] - working_hours[0] < 2:
+                st.sidebar.warning("Please select a range with at least 2 hours.")
+                button_disabled = True
+                # Adjust the range to have at least 2 hours
+                end_hour = min(working_hours[0] + 2, 23)
+                working_hours = (working_hours[0], end_hour)
+    
+            # Extract the start and end hour from the selected working hours range
+            start_hour = int(working_hours[0])
+            end_hour = int(working_hours[1])
+    
+            # Handle special case when end hour is 24 (midnight)
+            if end_hour == 24:
+                end_hour = 0
+    
+            # Calculate total working hours
+            work_hours = end_hour - start_hour
+    
+            # Number input widget to select the number of locations
+            num_of_locs = st.sidebar.number_input("Number of Locations", min_value=1, value=2, max_value=work_hours)
+    
+            # Validate the number of locations
+            if num_of_locs > 8:
+                st.sidebar.warning("Please select a smaller number of locations (maximum 8)")
+                button_disabled = True
+                num_of_locs = 8
+    
+            # Number input widget to select the maximum travel distance for each location
+            each_location_travel_distance = st.sidebar.number_input("Each Location Max Travel Distance (km)", min_value=0, value=5, max_value=50)
+    
+            # Dictionary to map weekday names to integers
+            weekdays_dict = {'Monday': 0, 'Tuesday': 1, 'Wednesday': 2, 'Thursday': 3, 'Friday': 4, 'Saturday': 5, 'Sunday': 6}
+    
+            # List of weekday names
+            weekdays_names = list(weekdays_dict.keys())
+    
+            # Multi-select widget to select work days
+            selected_weekdays_names = st.sidebar.multiselect("Select Work Days", weekdays_names, default=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'])
+    
+            # Convert selected weekday names to corresponding integer values
+            work_days = [weekdays_dict[name] for name in selected_weekdays_names]
+    
+            # If no weekdays are selected, default to all weekdays (Monday=0, ..., Friday=4)
+            if not work_days:
+                st.sidebar.warning("Please select at least one weekday")
+                work_days = [0, 1, 2, 3, 4]
+                button_disabled = True
+    
+            # Date input widget to select a specific date for the optimal route
+            route_date = st.sidebar.date_input('Select a specific date to see its optimal route', date_range[0])
+    
+            # Check if the selected date is within the allowed range
+            if route_date < date_range[0]:
+                # Display a warning message and adjust the date to the start of the date range
+                st.sidebar.warning("Please select a start date within the allowed range.")
+                route_date = date_range[0]
+                button_disabled = True
+            elif route_date > date_range[1]:
+                # Display a warning message and adjust the date to the end of the date range
+                st.sidebar.warning("Please select an end date within the allowed range.")
+                route_date = date_range[1]
+                button_disabled = True
+            elif route_date.weekday() not in work_days:
+                # Display a warning message if the selected date is not a working weekday
+                st.sidebar.warning("Please select a date that is during one of your selected working weekdays.")
+                route_date = date_range[0]
+                button_disabled = True
+                
+            # Display the selected truck id and date range
+            st.subheader("Selected Truck ID: {}".format(truck_id))
+            st.subheader("Selected date range: {} to {}".format(date_range[0].strftime("%B %Y"), date_range[1].strftime("%B %Y")))
+            
+        except Exception as e:
+            print(f"An error occurred with the input section: {e}")
+            
+        try:
+            # Process the inputs and display the results when the "Process Data" button is clicked
+            if st.button("Forecast Data (Main)", disabled=button_disabled):
+                # Calculate the maximum total travel distance based on each location's max travel distance and the number of locations
+                max_total_travel_distance = each_location_travel_distance * num_of_locs
+    
+                # Generate the list of months within the selected date range
+                months_list = generate_month_list(start_month, start_year, end_month, end_year)
+    
+                # Convert the selected working hours to a list of hours
+                hours_list = list(range(start_hour, end_hour + 1))
+    
+                # Initialize variables
+                year = start_year
+                shift_hours_list = get_shift_hours(start_hour, end_hour, num_of_locs)
+                month_value_list = []
+                final_df = pd.DataFrame()
+    
+                # DataFrames for storing original and previous year's revenue information
+                original_df = pd.DataFrame()
+                previous_df = pd.DataFrame()
+    
+                # Retrieve sales data for the selected truck from the Snowflake database
+                session.use_schema("ANALYTICS")
+                query = 'Select * from "Sales_Forecast_Training_Data" WHERE TRUCK_ID = {}'.format(truck_id)
+                X_final_scaled = session.sql(query).to_pandas()
+                X_final_scaled.rename(columns={"Profit": "Revenue"}, inplace=True)
+                sales_pred = session.sql("select * from ANALYTICS.SALES_PREDICTION").to_pandas()
+                X_final_scaled = X_final_scaled.merge(sales_pred["l_w5i8_DATE"].astype(str).str[:4].rename('YEAR'), left_index=True, right_index=True)
+                X_final_scaled = X_final_scaled[['Revenue', 'YEAR', 'MONTH', 'DAY', 'HOUR']]
+    
+                for month in months_list:
+                    # Adjust the year if the date range spans multiple years
+                    if start_year != end_year:
+                        if month == 1:
+                            year += 1
+    
+                    # Fetch input data for the current month, hours, and working weekdays from the Snowflake database
+                    query = 'SELECT * FROM "Trend_Input_Data" WHERE TRUCK_ID = {} AND YEAR = {} AND MONTH = {} AND HOUR IN ({}) AND DOW IN ({});'.format(
+                        truck_id, year, month, ', '.join(map(str, hours_list)), ', '.join(map(str, work_days)))
+                    input_data = session.sql(query).to_pandas()
+    
+                    # Make predictions using the loaded machine learning model for the current input data
+                    predict_df = input_data[['TRUCK_ID', 'MONTH', 'HOUR', 'DOW', 'DAY', 'PUBLIC_HOLIDAY', 'LAT', 'LONG', 'LOCATION_ID', 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE', 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE', 'WEATHERCODE', 'MENU_TYPE_GYROS_ENCODED', 'MENU_TYPE_CREPES_ENCODED', 'MENU_TYPE_BBQ_ENCODED', 'MENU_TYPE_SANDWICHES_ENCODED', 'MENU_TYPE_Mac & Cheese_encoded', 'MENU_TYPE_POUTINE_ENCODED', 'MENU_TYPE_ETHIOPIAN_ENCODED', 'MENU_TYPE_TACOS_ENCODED', 'MENU_TYPE_Ice Cream_encoded', 'MENU_TYPE_Hot Dogs_encoded', 'MENU_TYPE_CHINESE_ENCODED', 'MENU_TYPE_Grilled Cheese_encoded', 'MENU_TYPE_VEGETARIAN_ENCODED', 'MENU_TYPE_INDIAN_ENCODED', 'MENU_TYPE_RAMEN_ENCODED', 'CITY_SEATTLE_ENCODED', 'CITY_DENVER_ENCODED', 'CITY_San Mateo_encoded', 'CITY_New York City_encoded', 'CITY_BOSTON_ENCODED', 'REGION_NY_ENCODED', 'REGION_MA_ENCODED', 'REGION_CO_ENCODED', 'REGION_WA_ENCODED', 'REGION_CA_ENCODED']]
+                    predict_df['Predicted'] = xgb.predict(predict_df)
+    
+                    # Initialize a list to store DataFrames for each shift's predicted values
+                    shifts_df_list = []
+                    value = 0
+                    for i in range(num_of_locs):
+                        # Filter data for the current shift
+                        current_shift = predict_df[predict_df['HOUR'].isin(shift_hours_list[i])]
+    
+                        if i > 0:
+                            # Merge data from the previous shift to calculate the distance between locations
+                            previous_shift = pd.merge(shifts_df_list[i-1], predict_df[["LOCATION_ID", 'LAT', 'LONG']].drop_duplicates(), on=["LOCATION_ID"])
+                            previous_shift.rename(columns={'LAT': 'LAT2', 'LONG': 'LONG2'}, inplace=True)
+                            current_shift = pd.merge(current_shift, previous_shift[['LAT2','LONG2','DAY']], on=['DAY']).drop_duplicates()
+                            current_shift = haversine_distance(current_shift, each_location_travel_distance)
+    
+                        # Get the highest predicted revenue for each day in the current shift
+                        highest_df = get_highest_predicted(current_shift)
+                        value += highest_df['Predicted'].sum()
+                        shifts_df_list.append(highest_df)
+                        highest_df['HOUR'] = shift_hours_list[i][0]
+                        highest_df['MONTH'] = month
+                        highest_df['YEAR'] = year
+                        final_df = pd.concat([final_df, highest_df])
+    
+                    # Store the total predicted revenue value for the current month
+                    month_value_list.append(value)
+    
+                    # Calculate original and previous year's revenue for the current month
+                    og = X_final_scaled[(X_final_scaled['MONTH'] == month) & (X_final_scaled['YEAR'] == str(year))]
+                    og_df = pd.DataFrame({'Value': [og['Revenue'].sum()], 'Hours': [og['HOUR'].nunique()], 'Days': [og['DAY'].nunique()], 'YEAR': [year], 'Months': [month]})
+                    original_df = pd.concat([original_df, og_df])
+                    prev = X_final_scaled[(X_final_scaled['MONTH'] == month) & (X_final_scaled['YEAR'] == str(year-1))]
+                    pre_df = pd.DataFrame({'Value': [prev['Revenue'].sum()], 'Hours': [prev['HOUR'].nunique()], 'Days': [prev['DAY'].nunique()], 'YEAR': [year-1], 'Months': [month]})
+                    previous_df = pd.concat([previous_df, pre_df])
+    
+                # Create DataFrame to store the monthly revenue values
+                monthly_df = pd.DataFrame({
+                    'Months': months_list,
+                    'Value': month_value_list
+                })
+    
+                # Convert months to three-letter abbreviations
+                monthly_df['Months'] = monthly_df['Months'].apply(lambda x: calendar.month_abbr[x])
+                previous_df['Months'] = previous_df['Months'].apply(lambda x: calendar.month_abbr[x])
+                original_df['Months'] = original_df['Months'].apply(lambda x: calendar.month_abbr[x])
+    
+                # Calculate the total revenue for the selected time frame
+                total_revenue = monthly_df['Value'].sum()
+    
+                # Calculate the number of months within the selected date range
+                num_of_months = number_of_months(start_month, start_year, end_month, end_year)
+    
+                # Format total revenue with commas as thousands separator
+                total_revenue = f'{total_revenue:,.0f}'
+    
+                # Generate and save the monthly sales and revenue per hour graphs to image files
+                create_monthly_sales_graph(monthly_df, total_revenue)
+                create_revenue_per_hour_graph(monthly_df, num_of_months, work_hours, work_days, original_df, previous_df)
+    
+                # Display the monthly sales graph
+                st.image("monthly_sales_graph.png", use_column_width=True)
+    
+                # Display the monthly revenue per hour graph
+                st.image("monthly_revenue_per_hour_graph.png", use_column_width=True)
+    
+                # Retrieve additional data for the current route date from the Snowflake database
+                X_final_scaled = session.sql('Select * from "Sales_Forecast_Training_Data";').to_pandas()
+                final_df = pd.merge(final_df.copy(), X_final_scaled[['LOCATION_ID', 'LAT', 'LONG']].drop_duplicates(), on=["LOCATION_ID"])
+                shift_durations = get_shift_durations(start_hour, end_hour, num_of_locs)
+                distance_travelled = 0
+                revenue_earned = 0
+    
+                # Loop through each shift to display details for each location and calculate revenue
                 for i in range(num_of_locs):
-                    # Filter data for the current shift
-                    current_shift = predict_df[predict_df['HOUR'].isin(shift_hours_list[i])]
+                    current_df = final_df[(final_df['DAY'] == route_date.day) & (final_df['MONTH'] == route_date.month) & (final_df['YEAR'] == route_date.year)].iloc[i]
+                    if i == num_of_locs - 1:
+                        shift_hours_list[i].append(shift_hours_list[i][-1] + 1)
+                    time_range = format_time_range(shift_hours_list[i])
+                    st.subheader("Shift: {}".format(str(i+1)))
+                    st.write(time_range)
+                    st.write('Shift Hours: ', shift_durations[i])
+                    st.write('Current Location Number: ', current_df['LOCATION_ID'].round(0))
+                    st.write('Predicted Revenue: ', current_df['Predicted'].round(2))
+                    st.write('Predicted Revenue per hour: ', (current_df['Predicted'] / shift_durations[i]).round(2))
+                    revenue_earned += current_df['Predicted']
+    
+                # Calculate the distance travelled and the revenue earned per kilometer
+                for i in range(num_of_locs - 1):
+                    distance_travelled += find_distance(final_df[(final_df['DAY'] == route_date.day) & (final_df['MONTH'] == route_date.month) & (final_df['YEAR'] == route_date.year)].iloc[i], final_df[(final_df['DAY'] == route_date.day) & (final_df['MONTH'] == route_date.month) & (final_df['YEAR'] == route_date.year)].iloc[i + 1])
+    
+                if distance_travelled > 0:
+                    rev_dis = round(revenue_earned / distance_travelled, 2)
+                else:
+                    rev_dis = round(revenue_earned, 2)
+    
+                # Display the overall route information
+                st.subheader('Overall Route')
+                st.write('Maximum possible distance travelled throughout all the shifts: ', max_total_travel_distance, 'km')
+                st.write('Total distance travelled: ', round(distance_travelled, 2), 'km')
+                st.write('Dollars earned by km travelled: $', rev_dis, '/km')
+        except Exception as e:
+            print(f"An error occurred while processing the data: {e}")
+    
+        try:
+            # Create a button to show feature importance and performance
+            if st.button('Show Model Performance'):
+                # Load data from the Snowflake database
+                session.use_schema("ANALYTICS")
+                X_final_scaled = session.sql('Select * from "Sales_Forecast_Training_Data";').to_pandas()
+                X_final_scaled.rename(columns={"Profit": "Revenue"}, inplace=True)
+    
+                # Winsorize the target and some features to reduce the impact of outliers
+                X_final_scaled['Revenue'] = winsorise(X_final_scaled, 'Revenue', X_final_scaled['Revenue'].quantile(0.85), X_final_scaled['Revenue'].quantile(0))
+                X_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'] = winsorise(X_final_scaled, 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE', X_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].quantile(0.85), X_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].quantile(0))
+                X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'] = winsorise(X_final_scaled, 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE', X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].quantile(0.8), X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].quantile(0.5))
+    
+                # Split the dataset into features (X) and target (y)
+                X = X_final_scaled.drop("Revenue", axis=1)
+                y = X_final_scaled["Revenue"]
+    
+                # Split the dataset into training and testing datasets
+                X_training, X_holdout, y_training, y_holdout = train_test_split(X, y, test_size=0.2, random_state=42)
+    
+                # Create a DataFrame with holdout values and predicted values
+                df_predictions = X_holdout.copy()
+                df_predictions['Holdout'] = y_holdout
+                holdout_predictions = xgb.predict(X_holdout)
+                df_predictions['Predicted'] = holdout_predictions
+    
+                # Add a column for the differences
+                df_predictions['Difference'] = df_predictions['Predicted'] - df_predictions['Holdout']
+    
+                # Get feature importance as a DataFrame
+                feature_importance = pd.DataFrame({'Feature': X_final_scaled.drop(columns='Revenue').columns, 'Importance': xgb.feature_importances_})
+    
+                # Display the feature importance DataFrame
+                st.subheader('Feature Importance')
+                st.dataframe(feature_importance)
+    
+                # Calculate performance metrics
+                y_true = df_predictions['Holdout']
+                y_pred = df_predictions['Predicted']
+                mae = mean_absolute_error(y_true, y_pred)
+                mse = mean_squared_error(y_true, y_pred)
+                rmse = mean_squared_error(y_true, y_pred, squared=False)
+                r2 = r2_score(y_true, y_pred)
+    
+                # Display the performance metrics
+                st.subheader('Model Performance on Holdout data')
+                st.write(f'Mean Absolute Error (MAE): {mae:.2f}')
+                st.write(f'Mean Squared Error (MSE): {mse:.2f}')
+                st.write(f'Root Mean Squared Error (RMSE): {rmse:.2f}')
+                st.write(f'R-squared (R2) score: {r2:.2f}')
+    
+                # Generate and save the holdout vs. predicted graph to an image file
+                create_x_holdout_graph(df_predictions)
+    
+                # Display the holdout vs. predicted graph using the saved image file
+                st.image("x_holdout_graph.png", use_column_width=True)
+    
+                # Display the true and predicted values in a DataFrame
+                result_df = pd.DataFrame({'True Values': y_true, 'Predicted Values': y_pred})
+                st.subheader('True vs. Predicted Values')
+                st.dataframe(result_df)
+        except Exception as e:
+            print(f"An error occurred while showing the model performance: {e}")
 
-                    if i > 0:
-                        # Merge data from the previous shift to calculate the distance between locations
-                        previous_shift = pd.merge(shifts_df_list[i-1], predict_df[["LOCATION_ID", 'LAT', 'LONG']].drop_duplicates(), on=["LOCATION_ID"])
-                        previous_shift.rename(columns={'LAT': 'LAT2', 'LONG': 'LONG2'}, inplace=True)
-                        current_shift = pd.merge(current_shift, previous_shift[['LAT2','LONG2','DAY']], on=['DAY']).drop_duplicates()
-                        current_shift = haversine_distance(current_shift, each_location_travel_distance)
-
-                    # Get the highest predicted revenue for each day in the current shift
-                    highest_df = get_highest_predicted(current_shift)
-                    value += highest_df['Predicted'].sum()
-                    shifts_df_list.append(highest_df)
-                    highest_df['HOUR'] = shift_hours_list[i][0]
-                    highest_df['MONTH'] = month
-                    highest_df['YEAR'] = year
-                    final_df = pd.concat([final_df, highest_df])
-
-                # Store the total predicted revenue value for the current month
-                month_value_list.append(value)
-
-                # Calculate original and previous year's revenue for the current month
-                og = X_final_scaled[(X_final_scaled['MONTH'] == month) & (X_final_scaled['YEAR'] == str(year))]
-                og_df = pd.DataFrame({'Value': [og['Revenue'].sum()], 'Hours': [og['HOUR'].nunique()], 'Days': [og['DAY'].nunique()], 'YEAR': [year], 'Months': [month]})
-                original_df = pd.concat([original_df, og_df])
-                prev = X_final_scaled[(X_final_scaled['MONTH'] == month) & (X_final_scaled['YEAR'] == str(year-1))]
-                pre_df = pd.DataFrame({'Value': [prev['Revenue'].sum()], 'Hours': [prev['HOUR'].nunique()], 'Days': [prev['DAY'].nunique()], 'YEAR': [year-1], 'Months': [month]})
-                previous_df = pd.concat([previous_df, pre_df])
-
-            # Create DataFrame to store the monthly revenue values
-            monthly_df = pd.DataFrame({
-                'Months': months_list,
-                'Value': month_value_list
-            })
-
-            # Convert months to three-letter abbreviations
-            monthly_df['Months'] = monthly_df['Months'].apply(lambda x: calendar.month_abbr[x])
-            previous_df['Months'] = previous_df['Months'].apply(lambda x: calendar.month_abbr[x])
-            original_df['Months'] = original_df['Months'].apply(lambda x: calendar.month_abbr[x])
-
-            # Calculate the total revenue for the selected time frame
-            total_revenue = monthly_df['Value'].sum()
-
-            # Calculate the number of months within the selected date range
-            num_of_months = number_of_months(start_month, start_year, end_month, end_year)
-
-            # Format total revenue with commas as thousands separator
-            total_revenue = f'{total_revenue:,.0f}'
-
-            # Generate and save the monthly sales and revenue per hour graphs to image files
-            create_monthly_sales_graph(monthly_df, total_revenue)
-            create_revenue_per_hour_graph(monthly_df, num_of_months, work_hours, work_days, original_df, previous_df)
-
-            # Display the monthly sales graph
-            st.image("monthly_sales_graph.png", use_column_width=True)
-
-            # Display the monthly revenue per hour graph
-            st.image("monthly_revenue_per_hour_graph.png", use_column_width=True)
-
-            # Retrieve additional data for the current route date from the Snowflake database
-            X_final_scaled = session.sql('Select * from "Sales_Forecast_Training_Data";').to_pandas()
-            final_df = pd.merge(final_df.copy(), X_final_scaled[['LOCATION_ID', 'LAT', 'LONG']].drop_duplicates(), on=["LOCATION_ID"])
-            shift_durations = get_shift_durations(start_hour, end_hour, num_of_locs)
-            distance_travelled = 0
-            revenue_earned = 0
-
-            # Loop through each shift to display details for each location and calculate revenue
-            for i in range(num_of_locs):
-                current_df = final_df[(final_df['DAY'] == route_date.day) & (final_df['MONTH'] == route_date.month) & (final_df['YEAR'] == route_date.year)].iloc[i]
-                if i == num_of_locs - 1:
-                    shift_hours_list[i].append(shift_hours_list[i][-1] + 1)
-                time_range = format_time_range(shift_hours_list[i])
-                st.subheader("Shift: {}".format(str(i+1)))
-                st.write(time_range)
-                st.write('Shift Hours: ', shift_durations[i])
-                st.write('Current Location Number: ', current_df['LOCATION_ID'].round(0))
-                st.write('Predicted Revenue: ', current_df['Predicted'].round(2))
-                st.write('Predicted Revenue per hour: ', (current_df['Predicted'] / shift_durations[i]).round(2))
-                revenue_earned += current_df['Predicted']
-
-            # Calculate the distance travelled and the revenue earned per kilometer
-            for i in range(num_of_locs - 1):
-                distance_travelled += find_distance(final_df[(final_df['DAY'] == route_date.day) & (final_df['MONTH'] == route_date.month) & (final_df['YEAR'] == route_date.year)].iloc[i], final_df[(final_df['DAY'] == route_date.day) & (final_df['MONTH'] == route_date.month) & (final_df['YEAR'] == route_date.year)].iloc[i + 1])
-
-            if distance_travelled > 0:
-                rev_dis = round(revenue_earned / distance_travelled, 2)
-            else:
-                rev_dis = round(revenue_earned, 2)
-
-            # Display the overall route information
-            st.subheader('Overall Route')
-            st.write('Maximum possible distance travelled throughout all the shifts: ', max_total_travel_distance, 'km')
-            st.write('Total distance travelled: ', round(distance_travelled, 2), 'km')
-            st.write('Dollars earned by km travelled: $', rev_dis, '/km')
-    except Exception as e:
-        print(f"An error occurred while processing the data: {e}")
-
-    try:
-        # Create a button to show feature importance and performance
-        if st.button('Show Model Performance'):
-            # Load data from the Snowflake database
-            session.use_schema("ANALYTICS")
-            X_final_scaled = session.sql('Select * from "Sales_Forecast_Training_Data";').to_pandas()
-            X_final_scaled.rename(columns={"Profit": "Revenue"}, inplace=True)
-
-            # Winsorize the target and some features to reduce the impact of outliers
-            X_final_scaled['Revenue'] = winsorise(X_final_scaled, 'Revenue', X_final_scaled['Revenue'].quantile(0.85), X_final_scaled['Revenue'].quantile(0))
-            X_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'] = winsorise(X_final_scaled, 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE', X_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].quantile(0.85), X_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].quantile(0))
-            X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'] = winsorise(X_final_scaled, 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE', X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].quantile(0.8), X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].quantile(0.5))
-
-            # Split the dataset into features (X) and target (y)
-            X = X_final_scaled.drop("Revenue", axis=1)
-            y = X_final_scaled["Revenue"]
-
-            # Split the dataset into training and testing datasets
-            X_training, X_holdout, y_training, y_holdout = train_test_split(X, y, test_size=0.2, random_state=42)
-
-            # Create a DataFrame with holdout values and predicted values
-            df_predictions = X_holdout.copy()
-            df_predictions['Holdout'] = y_holdout
-            holdout_predictions = xgb.predict(X_holdout)
-            df_predictions['Predicted'] = holdout_predictions
-
-            # Add a column for the differences
-            df_predictions['Difference'] = df_predictions['Predicted'] - df_predictions['Holdout']
-
-            # Get feature importance as a DataFrame
-            feature_importance = pd.DataFrame({'Feature': X_final_scaled.drop(columns='Revenue').columns, 'Importance': xgb.feature_importances_})
-
-            # Display the feature importance DataFrame
-            st.subheader('Feature Importance')
-            st.dataframe(feature_importance)
-
-            # Calculate performance metrics
-            y_true = df_predictions['Holdout']
-            y_pred = df_predictions['Predicted']
-            mae = mean_absolute_error(y_true, y_pred)
-            mse = mean_squared_error(y_true, y_pred)
-            rmse = mean_squared_error(y_true, y_pred, squared=False)
-            r2 = r2_score(y_true, y_pred)
-
-            # Display the performance metrics
-            st.subheader('Model Performance on Holdout data')
-            st.write(f'Mean Absolute Error (MAE): {mae:.2f}')
-            st.write(f'Mean Squared Error (MSE): {mse:.2f}')
-            st.write(f'Root Mean Squared Error (RMSE): {rmse:.2f}')
-            st.write(f'R-squared (R2) score: {r2:.2f}')
-
-            # Generate and save the holdout vs. predicted graph to an image file
-            create_x_holdout_graph(df_predictions)
-
-            # Display the holdout vs. predicted graph using the saved image file
-            st.image("x_holdout_graph.png", use_column_width=True)
-
-            # Display the true and predicted values in a DataFrame
-            result_df = pd.DataFrame({'True Values': y_true, 'Predicted Values': y_pred})
-            st.subheader('True vs. Predicted Values')
-            st.dataframe(result_df)
-    except Exception as e:
-        print(f"An error occurred while showing the model performance: {e}")
+    if __name__ == "__main__":
+        try:
+            main()
+        except Exception as e:
+            print(f"An error occurred with the streamlit web app: {e}")
         
 
 with tab3: #javier
