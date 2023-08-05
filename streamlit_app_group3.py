@@ -10,7 +10,6 @@ import plotly.express as px
 import getpass
 import pandas as pd
 import matplotlib.pyplot as plt
-import datetime
 from datetime import datetime
 from datetime import timedelta
 import math
@@ -299,7 +298,8 @@ with tab2: #minh
         except Exception as e:
             print(f"An error occurred while retrieving list of dates: {e}")
             return pd.DataFrame()
-    
+            
+    import datetime
     import holidays
     def add_public_holiday_column(df, date_column): #ONLY USED IN CONJUCTION WITH upload_input_data_to_snowflake() function
     
