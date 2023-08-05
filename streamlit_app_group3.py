@@ -27,7 +27,7 @@ connection_parameters = { "account": 'hiioykl-ix77996',"user": 'JAVIER',"passwor
 session = Session.builder.configs(connection_parameters).create()
 X_final_scaled=pd.read_csv('x_final_scaled.csv')
 unique_location_ids = X_final_scaled['LOCATION_ID'].unique()
-# Create a list to store the table data
+# Create a list to store the tables data
 table_data = []
 # Create a DataFrame to store the table data
 df_unique_locations_lat_long = pd.DataFrame(columns=["Location ID", "Latitude", "Longitude"])
