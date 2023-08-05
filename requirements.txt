@@ -90,7 +90,6 @@ parso
 patsy
 pickleshare
 Pillow
-pip
 pkgutil_resolve_name
 platformdirs
 prometheus-client
@@ -113,8 +112,6 @@ python-json-logger
 pytorch-tabnet
 pytz
 pytz-deprecation-shim
-pywin32
-pywinpty
 PyYAML
 pyzmq
 qtconsole
