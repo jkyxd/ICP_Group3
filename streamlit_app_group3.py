@@ -1074,12 +1074,13 @@ with tab2: #minh
             st.warning("Please select a date that is during one of your selected working weekdays.")
             route_date = date_range[0]
             button_disabled = True
+
+        # Display the selected truck id and date range
+        st.subheader("Selected Truck ID: {}".format(truck_id))
+        st.subheader("Selected date range: {} to {}".format(date_range[0].strftime("%B %Y"), date_range[1].strftime("%B %Y")))
+
     except Exception as e:
         print(f"An error occurred with the input section: {e}")
-
-    # Display the selected truck id and date range
-    st.subheader("Selected Truck ID: {}".format(truck_id))
-    st.subheader("Selected date range: {} to {}".format(date_range[0].strftime("%B %Y"), date_range[1].strftime("%B %Y")))
         
     try:
         # Process the inputs and display the results when the "Process Data" button is clicked
