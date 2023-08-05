@@ -1537,50 +1537,191 @@ with tab4: #Aryton
 
 with tab5: #vibu
     
-    df= pd.read_csv('truck_location_df.csv')
-    df['Date'] = pd.to_datetime(df['Date'])
-    df["Date"]=pd.to_datetime(df['Date'], format='%d/%m/%Y')
+   
 
-# Sort the DataFrame by Date
-    df.sort_values(by='Date', inplace=True)
+# read csv from a URL
+    @st.cache_data
+    def get_data() -> pd.DataFrame:
+        df=pd.read_csv('truck_manager_merged_df.csv')
+        df['Date'] = pd.to_datetime(df['Date'])
+        df["Date"]=pd.to_datetime(df['Date'], format='%d/%m/%Y')
+        df.sort_values(by='Date', inplace=True)  
+        df['predicted_earning'] = df['predicted_earning'].apply(lambda x: [int(float(i)) for i in x.strip('[]').split(',')])
+        df['total_sales']=df['predicted_earning'].apply(lambda x: sum(x))
+        percentile_25 = df['total_sales'].quantile(0.25)
+        percentile_50 = df['total_sales'].quantile(0.5)
+        
+        
 
+        # Define the function to map earnings to letter grades
+        def assign_letter_grade(earnings):
+      
+            if earnings > percentile_50:
+                return 'A'
+            elif earnings > percentile_25:
+                return 'B'
+            else:
+                return 'C'
 
+        # Apply the mapping function to create a new column with letter grades
+        df['Letter_Grade'] = df['total_sales'].apply(assign_letter_grade)
+        df['start_time'] = df['start_time'].apply(lambda x: [int(float(i)) for i in x.strip('[]').split(',')])
+                
+        
+        return  df
 
-# Dashboard title
+    df = get_data()
+    
+    @st.cache_data
+    def get_sales_time() -> pd.DataFrame:
+        sales_over_time_df = df.copy()
+        sales_over_time_df['start_time'] = sales_over_time_df['start_time'].apply(lambda x: x[1:])
+        sales_over_time_df = sales_over_time_df.explode('start_time')
+        
+        sales_over_time_df = sales_over_time_df.explode('predicted_earning')
+        sales_over_time_df.drop_duplicates(subset=['predicted_earning', 'start_time'], inplace=True)
+        
+       
+
+        sales_over_time_df.sort_values(by='start_time', inplace=True)
+        
+        return sales_over_time_df
+    
+    sales_time =get_sales_time()
+        
+    
+    
+   
+    # dashboard title
     st.title("Food Truck Competitor Analysis Dashboard")
 
-# Overview Section
-    st.header("Overview")
-    df['predicted_earning'] = df['predicted_earning'].apply(lambda x: [int(float(i)) for i in x.strip('[]').split(',')])
-    total_sales=df['predicted_earning'].apply(lambda x: sum(x)).sum()
+    # top-level filters
+    truck_filter = st.selectbox("Select the Truck", pd.unique(df["Truck_ID"]))
+    percentile_50 = df['total_sales'].quantile(0.5)
+    percentile_dis_50 = df['total_distance_traveled'].quantile(0.5)
 
-    average_predicted_earnings = df['predicted_earning'].apply(lambda x: sum(x) / len(x)).mean()
-    total_locations_visited = df['Num_of_locs'].sum()
+    # creating a single-element container
+    placeholder = st.empty()
 
-    st.write(f"Total Sales (Last 2 weeks): ${round(total_sales, 2)}")
-    st.write(f"Average Predicted Earnings: ${round(average_predicted_earnings, 2)}")
-    st.write(f"Total Locations Visited: {total_locations_visited}")
+ 
 
-# # Sales Performance Section
-#     st.header("Sales Performance")
-#     fig_sales = px.bar(df, x='Date', y='predicted_earning', title='Predicted Earnings Over Time')
-#     st.plotly_chart(fig_sales)
-
-# Efficiency Metrics Section
-    st.header("Efficiency Metrics")
-    fig_hours = px.pie(df, names='Truck_ID', values='working_hour', title='Distribution of Working Hours')
-    fig_shifts = px.bar(df, x='Truck_ID', y='Num_of_locs', title='Number of Locations Visited')
-    st.plotly_chart(fig_hours)
-    st.plotly_chart(fig_shifts)
+  
 
 
-# Prioritization Analysis Section
-    st.header("Prioritization Analysis")
-    df['Priority_Order'] = df['Truck_ID'].rank(method='first')
-    fig_priority = px.bar(df, x='Truck_ID', y='predicted_earning', color='Priority_Order',
-                      labels={'Truck_ID': 'Truck ID', 'predicted_earning': 'Predicted Earnings'},
-                      title='Truck Prioritization Based on Sales Performance')
-    st.plotly_chart(fig_priority)
+    
+     # dataframe filter
+    filter_df = df[df["Truck_ID"] ==truck_filter]
+    
+    filter_sales_time = sales_time[sales_time["Truck_ID"] ==truck_filter]
+
+
+    with placeholder.container():
+
+            # create three columns
+            kpi1, kpi2, kpi3,kpi4 = st.columns(4)
+                        
+            kpi1.metric( 
+                label="Predicted Performance",
+                 value=filter_df["Letter_Grade"].values[0],
+                 delta=None)
+
+            # fill in those three columns with respective metrics or KPIs
+            kpi2.metric(
+                label="Sales",
+                value=filter_df["total_sales"].sum(),
+                delta=filter_df["total_sales"].sum()-percentile_50
+            )
+            
+        
+            
+            kpi3.metric(
+                label="Distance Travelled",
+                value=filter_df["total_distance_traveled"].sum().round(2),
+                delta=(filter_df["total_distance_traveled"].sum()-percentile_dis_50).round(2)
+            )
+            
+            kpi4.metric(
+                label="Working Hour",
+                value=filter_df["working_hour"].sum(),
+                delta=filter_df["working_hour"].sum()-df["working_hour"].median()
+            )
+
+                
+             
+
+            st.markdown("### Top 5 Trucks")
+                
+            df_sorted = df.sort_values(by='total_sales', ascending=False)
+            top_5_trucks = df_sorted.head(5)
+            top_5_trucks['Truck_ID'] = top_5_trucks['Truck_ID'].astype(str)
+            fig2 = px.bar(top_5_trucks, x='Truck_ID', y='total_sales', 
+             labels={'Truck_ID': 'Truck ID', 'Total_Earnings': 'Total Predicted Earnings'})
+            fig2.update_xaxes(type='category')
+
+            st.write(fig2)
+
+         
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        #vibu
+        
+    #     df= pd.read_csv('truck_location_df.csv')
+    #     df['Date'] = pd.to_datetime(df['Date'])
+    #     df["Date"]=pd.to_datetime(df['Date'], format='%d/%m/%Y')
+
+    # # Sort the DataFrame by Date
+    #     df.sort_values(by='Date', inplace=True)
+
+
+
+    # # Dashboard title
+    #     st.title("Food Truck Competitor Analysis Dashboard")
+
+    # # Overview Section
+    #     st.header("Overview")
+    #     df['predicted_earning'] = df['predicted_earning'].apply(lambda x: [int(float(i)) for i in x.strip('[]').split(',')])
+    #     total_sales=df['predicted_earning'].apply(lambda x: sum(x)).sum()
+
+    #     average_predicted_earnings = df['predicted_earning'].apply(lambda x: sum(x) / len(x)).mean()
+    #     total_locations_visited = df['Num_of_locs'].sum()
+
+    #     st.write(f"Total Sales (Last 2 weeks): ${round(total_sales, 2)}")
+    #     st.write(f"Average Predicted Earnings: ${round(average_predicted_earnings, 2)}")
+    #     st.write(f"Total Locations Visited: {total_locations_visited}")
+
+    # # # Sales Performance Section
+    # #     st.header("Sales Performance")
+    # #     fig_sales = px.bar(df, x='Date', y='predicted_earning', title='Predicted Earnings Over Time')
+    # #     st.plotly_chart(fig_sales)
+
+    # # Efficiency Metrics Section
+    #     st.header("Efficiency Metrics")
+    #     fig_hours = px.pie(df, names='Truck_ID', values='working_hour', title='Distribution of Working Hours')
+    #     fig_shifts = px.bar(df, x='Truck_ID', y='Num_of_locs', title='Number of Locations Visited')
+    #     st.plotly_chart(fig_hours)
+    #     st.plotly_chart(fig_shifts)
+
+
+    # # Prioritization Analysis Section
+    #     st.header("Prioritization Analysis")
+    #     df['Priority_Order'] = df['Truck_ID'].rank(method='first')
+    #     fig_priority = px.bar(df, x='Truck_ID', y='predicted_earning', color='Priority_Order',
+    #                       labels={'Truck_ID': 'Truck ID', 'predicted_earning': 'Predicted Earnings'},
+    #                       title='Truck Prioritization Based on Sales Performance')
+    #     st.plotly_chart(fig_priority)
+
+    
+        
 
  
     
