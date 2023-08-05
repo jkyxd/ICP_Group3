@@ -1,5 +1,4 @@
 import streamlit as st
-import pandas as pd
 import joblib
 from snowflake.snowpark.session import Session
 import snowflake.snowpark.functions as F
@@ -11,9 +10,10 @@ import plotly.express as px
 import getpass
 import pandas as pd
 import matplotlib.pyplot as plt
+import datetime
 from datetime import datetime
-import math
 from datetime import timedelta
+import math
 
 import folium
 from streamlit_folium import st_folium
@@ -300,7 +300,6 @@ with tab2: #minh
             print(f"An error occurred while retrieving list of dates: {e}")
             return pd.DataFrame()
     
-    import datetime
     import holidays
     def add_public_holiday_column(df, date_column): #ONLY USED IN CONJUCTION WITH upload_input_data_to_snowflake() function
     
