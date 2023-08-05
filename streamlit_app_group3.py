@@ -930,6 +930,7 @@ with tab2: #minh
     from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
     from sklearn.model_selection import train_test_split
     import numpy as np
+    import streamlit as st
     # Streamlit web app code
     try:
         st.title("Food Truck Revenue Forecast Trend")
