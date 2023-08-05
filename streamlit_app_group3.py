@@ -1006,10 +1006,6 @@ with tab2: #minh
             end_year = date_range[1].year
             end_month = date_range[1].month
     
-            # Display the selected truck id and date range
-            st.subheader("Selected Truck ID: {}".format(truck_id))
-            st.subheader("Selected date range: {} to {}".format(date_range[0].strftime("%B %Y"), date_range[1].strftime("%B %Y")))
-    
             # Slider widget to select working hours range
             working_hours = st.slider('Select working hours (24h-Notation)', 1, 24, (8, 12))
     
@@ -1083,10 +1079,14 @@ with tab2: #minh
                 button_disabled = True
         except Exception as e:
             print(f"An error occurred with the input section: {e}")
-    
+
+        # Display the selected truck id and date range
+        st.subheader("Selected Truck ID: {}".format(truck_id))
+        st.subheader("Selected date range: {} to {}".format(date_range[0].strftime("%B %Y"), date_range[1].strftime("%B %Y")))
+            
         try:
             # Process the inputs and display the results when the "Process Data" button is clicked
-            if st.button("Process Data (Main)", disabled=button_disabled):
+            if st.button("Forecast Data (Main)", disabled=button_disabled):
                 # Calculate the maximum total travel distance based on each location's max travel distance and the number of locations
                 max_total_travel_distance = each_location_travel_distance * num_of_locs
     
