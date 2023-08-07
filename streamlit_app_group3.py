@@ -1524,7 +1524,7 @@ with tab3: #javier
     if st.button("Run Algorithm"):
         # Display a loading message while the algorithm is running
         with st.spinner("Running the algorithm..."):
-            thread = threading.Thread(target=run_process)
+            thread = threading.Thread(target=run_process())
             thread.start()
                                       
             #output = find_optimal_hour(truck_id,date,no_of_hours)
