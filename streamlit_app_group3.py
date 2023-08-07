@@ -1,5 +1,6 @@
 import streamlit as st
 import joblib
+import threading
 from snowflake.snowpark.session import Session
 import snowflake.snowpark.functions as F
 import snowflake.snowpark.types as T
@@ -1496,29 +1497,37 @@ with tab3: #javier
         
         #Initialize variables
         average_revenue_for_hour['rolling_average']=0
+        working_hours=hours-1
         max_revenue = 0
         optimal_hours = []
-        for i in range(len(average_revenue_for_hour) - 4):
+        for i in range(len(average_revenue_for_hour) - working_hours):
             
             total_revenue=0
             # Calculate the total revenue for the current 5-hour window
-            total_revenue = average_revenue_for_hour.loc[i:i+4, 'AVERAGE REVENUE PER HOUR'].sum()
+            total_revenue = average_revenue_for_hour.loc[i:i+working_hours, 'AVERAGE REVENUE PER HOUR'].sum()
             average_revenue_for_hour['rolling_average'].loc[i] = total_revenue
             
              # Check if the current total revenue is greater than the previous maximum
             if total_revenue > max_revenue:
                 max_revenue = total_revenue
-                optimal_hours = average_revenue_for_hour.loc[i:i+4, 'HOUR'].tolist()
+                optimal_hours = average_revenue_for_hour.loc[i:i+working_hours, 'HOUR'].tolist()
         values=[optimal_hours,max_revenue]
 
 
 
     
         return values
+    def run_process():
+        output = find_optimal_hour(truck_id,date,no_of_hours)
+    
+        
     if st.button("Run Algorithm"):
         # Display a loading message while the algorithm is running
         with st.spinner("Running the algorithm..."):
-            output = find_optimal_hour(truck_id,date,no_of_hours)
+            thread = threading.Thread(target=run_process)
+            thread.start()
+                                      
+            #output = find_optimal_hour(truck_id,date,no_of_hours)
     
         # Show the output once the algorithm is done
         st.success("Algorithm completed!")
