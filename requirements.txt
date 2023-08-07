@@ -13,4 +13,3 @@ pyarrow==10.0.1
 numpy
 holidays
 scikit-learn
-threading
