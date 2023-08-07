@@ -1,6 +1,6 @@
 import streamlit as st
 import joblib
-import multiprocessing
+import concurrent.futures
 from snowflake.snowpark.session import Session
 import snowflake.snowpark.functions as F
 import snowflake.snowpark.types as T
@@ -1346,8 +1346,8 @@ with tab3: #javier
     st.subheader('4. Optimal shift timing will be recommended to you based on the forecasted total average revenue across all locations')
 
 
-    def find_optimal_hour(args):
-        truck_id,date,no_of_hours=args
+    def find_optimal_hour(truck_id,date,no_of_hours):
+        
         # user input
         
         datetime_object = datetime.datetime.strptime(date, '%Y-%m-%d')
@@ -1521,14 +1521,13 @@ with tab3: #javier
 
         
     if st.button("Run Algorithm"):
-        input_data=[(truck_id,date,no_of_hours)]
         # Display a loading message while the algorithm is running
         with st.spinner("Running the algorithm..."):
-            num_processes = multiprocessing.cpu_count()  # You can adjust this number as needed
-            pool = multiprocessing.Pool(processes=num_processes)
-            output = pool.map(find_optimal_hour, input_data)
-            pool.close()
-            pool.join()
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(find_optimal_hour, truck_id, date, no_of_hours)
+            while not future.done():
+                pass
+            output = future.result()
             
                                       
     
