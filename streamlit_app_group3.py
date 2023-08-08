@@ -46,6 +46,11 @@ for location_id in unique_location_ids:
 #import plotly.express as px
 st.title('SpeedyBytes 🚚')
 st.image('speedybytes_icon2.jpg',  width=600)
+
+query = 'SELECT * FROM "weadf_trend" WHERE DATE = 2022-09-09'
+
+session.use_schema("ANALYTICS")
+weadf=session.sql(query).toPandas()
 # st.image('speedybytes_icon2.jpg',width=600)
 @st.cache_data  #for caching the csvs
 def load_truck_data():
@@ -1468,11 +1473,11 @@ with tab3: #javier
 
     query = 'SELECT * FROM "weadf_trend" WHERE DATE = \'{}\''.format(for_weadf)
 
-        session.use_schema("ANALYTICS")
-        weadf=session.sql(query).toPandas()
-        weadf['LOCATION_ID']=weadf['LOCATION_ID'].astype('str')
-        weadf['WEATHERCODE']=weadf['WEATHERCODE'].astype('int64')
-        weadf['H']=weadf['H'].astype('int64')
+    session.use_schema("ANALYTICS")
+    weadf=session.sql(query).toPandas()
+    weadf['LOCATION_ID']=weadf['LOCATION_ID'].astype('str')
+    weadf['WEATHERCODE']=weadf['WEATHERCODE'].astype('int64')
+    weadf['H']=weadf['H'].astype('int64')
 
 
     def find_optimal_hour(truck_id,date,no_of_hours):
