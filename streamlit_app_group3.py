@@ -24,6 +24,7 @@ from functools import reduce
 st.set_page_config(layout="wide")
 #Loading model and data
 model=joblib.load('model.joblib')
+old_updated_model.load('updated_old_model.joblib')
 connection_parameters = { "account": 'hiioykl-ix77996',"user": 'JAVIER',"password": '02B289223r04', "role": "ACCOUNTADMIN","database": "FROSTBYTE_TASTY_BYTES","warehouse": "COMPUTE_WH"}
 session = Session.builder.configs(connection_parameters).create()
 X_final_scaled=pd.read_csv('x_final_scaled.csv')
@@ -970,9 +971,9 @@ with tab2: #minh
             print(f"An error occurred while creating the x_holdout graph: {e}")
     
     try:
-        xgb = joblib.load('model.joblib')
+        xgb = model
     except Exception as e:
-            print(f"An error occurred while loading the model from the file: {e}")
+            print(f"An error occurred while loading the model: {e}")
     
     from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
     from sklearn.model_selection import train_test_split
@@ -1289,7 +1290,7 @@ with tab2: #minh
 
                 if selected_model == 'Old Asg2 Model':
                     try:
-                        model_per = joblib.load('model.joblib')
+                        model_per = model
                     except Exception as e:
                             print(f"An error occurred while loading the model from the file: {e}")
                     # Winsorize the target and some features to reduce the impact of outliers
@@ -1299,7 +1300,7 @@ with tab2: #minh
                 
                 elif selected_model == 'Updated Asg2 Model (Fixed)':
                     try:
-                        model_per = joblib.load('updated_old_model.joblib')
+                        model_per = old_updated_model
                     except Exception as e:
                             print(f"An error occurred while loading the model from the file: {e}")
                     #Trimming Outliers for Holdout Graph
@@ -1311,7 +1312,7 @@ with tab2: #minh
 
                 else:
                     try:
-                        model_per = joblib.load('model.joblib')
+                        model_per = model
                     except Exception as e:
                             print(f"An error occurred while loading the model from the file: {e}")
     
