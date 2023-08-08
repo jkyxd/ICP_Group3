@@ -1390,6 +1390,9 @@ with tab2: #minh
         
 
 with tab3: #javier
+    X_final_scaled=load_x_final_scaled()
+    sales_pred=load_sales_pred()
+    X_final_scaled=X_final_scaled.merge(sales_pred["l_w5i8_DATE"].astype(str).str[:4].rename('YEAR'), left_index=True, right_index=True)
     st.header('Optimal Shift Timing Recommendation')
     st.subheader('Want to find out the optimal working hours for your truck?')
     st.subheader('1. Specify your truck details')
@@ -1427,14 +1430,6 @@ with tab3: #javier
     # Validate the user input and display a success message
     if is_valid_date_format(date):
         st.success(f"Your input date '{date}' has been saved !")
-    elif date.strip() != "":
-        st.warning("Please enter a valid date in the format 'YYYY-M-D'.")
-    st.subheader('4. Optimal shift timing will be recommended to you based on the forecasted total average revenue across all locations')
-
-
-    def find_optimal_hour(truck_id,date,no_of_hours):
-        # user input
-        
         date_d=pd.to_datetime(date)
         datetime_object = datetime.datetime.strptime(date, '%Y-%m-%d')
         
@@ -1451,26 +1446,7 @@ with tab3: #javier
         input_df['WOM'] = (input_df['DAY'] - 1) // 7 + 1
         input_df['YEAR'] = input_df['date'].dt.year
         
-        public_holidays = [
-            {'Month': 7, 'Day': 4, 'DOW': None, 'WOM': None},  # 4th of July
-            {'Month': 12, 'Day': 24, 'DOW': None, 'WOM': None},  # Christmas Eve
-            {'Month': 12, 'Day': 25, 'DOW': None, 'WOM': None},  # Christmas Day
-            {'Month': 10, 'Day': None, 'DOW': '0', 'WOM': 2},  # Columbus Day (second Monday in October)
-            {'Month': 6, 'Day': 19, 'DOW': None, 'WOM': None},  # Juneteenth
-            {'Month': 9, 'Day': None, 'DOW': '0', 'WOM': 1},  # Labor Day (first Monday in September)
-            {'Month': 1, 'Day': None, 'DOW': '0', 'WOM': 3},  # Martin Luther King, Jr. Day (third Monday in January)
-            {'Month': 5, 'Day': None, 'DOW': '0', 'WOM': -1},  # Memorial Day (last Monday in May)
-            {'Month': 1, 'Day': 1, 'DOW': None, 'WOM': None},  # New Year's Day
-            {'Month': 12, 'Day': 31, 'DOW': None, 'WOM': None},  # New Year's Eve
-            {'Month': 11, 'Day': None, 'DOW': '3', 'WOM': 4},  # Thanksgiving Day (fourth Thursday in November)
-            {'Month': 11, 'Day': None, 'DOW': '2', 'WOM': 4},  # Thanksgiving Eve (fourth Wednesday in November)
-            {'Month': 2, 'Day': 14, 'DOW': None, 'WOM': None},  # Valentine's Day
-            {'Month': 11, 'Day': 11, 'DOW': None, 'WOM': None},  # Veterans Day
-            {'Month': 10, 'Day': 31, 'DOW': None, 'WOM': None},  # Halloween
-            {'Month': 3, 'Day': 17, 'DOW': None, 'WOM': None},  # St. Patrick's Day
-            {'Month': 11, 'Day': 25, 'DOW': '4', 'WOM': None},  # Black Friday
-            {'Month': 12, 'Day': 26, 'DOW': None, 'WOM': None},  # Boxing Day
-        ]
+        
         
         # Iterate over the public holidays and create the 'public_holiday' column
         input_df['PUBLIC_HOLIDAY'] = 0
@@ -1482,12 +1458,6 @@ with tab3: #javier
             mask = month_mask & day_mask & dow_mask & wom_mask
             input_df.loc[mask, 'PUBLIC_HOLIDAY'] = 1
     
-        # wdf=session.sql("Select * from ANALYTICS.WEATHER_DATA_API")
-        # wdf=wdf.withColumn("H",F.substring(wdf["TIME"], 12, 2).cast("integer"))
-        # wdf=wdf.withColumn("DATE",F.substring(wdf["TIME"], 0, 10))
-        # wdf=wdf.select("WEATHERCODE","LOCATION_ID","H","DATE" )
-        # wdf=wdf.to_pandas()
-        #wdf=pd.read_csv('wdf.csv')
         query = 'SELECT * FROM "weadf_trend" WHERE DATE = \'{}\''.format(for_weadf)
 
         session.use_schema("ANALYTICS")
@@ -1495,25 +1465,24 @@ with tab3: #javier
         weadf['LOCATION_ID']=weadf['LOCATION_ID'].astype('str')
         weadf['WEATHERCODE']=weadf['WEATHERCODE'].astype('int64')
         weadf['H']=weadf['H'].astype('int64')
+    elif date.strip() != "":
+        st.warning("Please enter a valid date in the format 'YYYY-M-D'.")
+    st.subheader('4. Optimal shift timing will be recommended to you based on the forecasted total average revenue across all locations')
+
+
+    def find_optimal_hour(truck_id,date,no_of_hours):
         #works
         average_revenue_for_hour=pd.DataFrame(columns=['TRUCK_ID','HOUR','AVERAGE REVENUE PER HOUR'])   
         #TODO for loop testing - change hour, sum1,sum2,weathercode
         for x in range(8,24):
-            #session.use_schema("RAW_POS")
-            #query = "SELECT * FROM TRUCK WHERE TRUCK_ID = '{}'".format(truck_id)
-            #query = "SELECT * FROM TRUCK"
-            #truck_df=session.sql(query).toPandas()
-            #truck_df.head(30)
-            #truck_df.to_csv('truck_df.csv',index=False)
-            #truck_df=pd.read_csv('truck_df.csv') #caching?
-            truck_df=load_truck_data()
+            # truck_df=load_truck_data()
 
-            truck_df=truck_df[truck_df['TRUCK_ID']==truck_id]
-            truck_df=truck_df.reset_index()
-            truck_df=truck_df.drop(['index'],axis=1)
+            # truck_df_temp=truck_df[truck_df['TRUCK_ID']==truck_id]
+            # truck_df_temp=truck_df_temp.reset_index()
+            # truck_df_temp=truck_df_temp.drop(['index'],axis=1)
     
     
-            city = truck_df['PRIMARY_CITY'].iloc[0]
+            # city = truck_df_temp['PRIMARY_CITY'].iloc[0]
         
             #query = "SELECT * FROM LOCATION WHERE CITY = '{}'".format(city)
             #session.use_schema('RAW_POS')
@@ -1546,10 +1515,10 @@ with tab3: #javier
             #sales_pred=session.sql("select * from ANALYTICS.SALES_PREDICTION").to_pandas() #this is the problem.
         
             #sales_pred.to_csv('sales_pred.csv')
-            sales_pred=load_sales_pred()
+            # sales_pred=load_sales_pred()
     
-            X_final_scaled=load_x_final_scaled()
-            X_final_scaled=X_final_scaled.merge(sales_pred["l_w5i8_DATE"].astype(str).str[:4].rename('YEAR'), left_index=True, right_index=True)
+            # X_final_scaled=load_x_final_scaled()
+            # X_final_scaled=X_final_scaled.merge(sales_pred["l_w5i8_DATE"].astype(str).str[:4].rename('YEAR'), left_index=True, right_index=True)
             filtered_df = X_final_scaled[(X_final_scaled['TRUCK_ID'] == truck_id) & (X_final_scaled['YEAR'].astype(int) == input_df['YEAR'][0].astype(int))]
             filtered_df = filtered_df[['TRUCK_ID', 'MENU_TYPE_GYROS_ENCODED', 'MENU_TYPE_CREPES_ENCODED', 
                                     'MENU_TYPE_BBQ_ENCODED', 'MENU_TYPE_SANDWICHES_ENCODED', 'MENU_TYPE_Mac & Cheese_encoded', 'MENU_TYPE_POUTINE_ENCODED', 
@@ -1638,7 +1607,6 @@ with tab3: #javier
         st.write("Output:")
         st.text("Optimal Hours: "+str(output[0]))
         st.text("Maximum Revenue: "+str(output[1]))
-
 
 
     
