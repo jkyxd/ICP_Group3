@@ -1281,8 +1281,6 @@ with tab2: #minh
         try:
             # Create a button to show feature importance and performance
             if st.button('Show Model Performance'):
-
-
                 
                 # Load data from the Snowflake database
                 session.use_schema("ANALYTICS")
@@ -1303,7 +1301,7 @@ with tab2: #minh
                     try:
                         xgb = joblib.load('updated_old_model.joblib')
                     except Exception as e:
-                            st.write(f"An error occurred while loading the model from the file: {e}")
+                            print(f"An error occurred while loading the model from the file: {e}")
                     #Trimming Outliers for Holdout Graph
                     X_final_scaled = trim_outliers(X_final_scaled, 'Revenue')
                     outliers_IV = np.where(X_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'] >1.7, True, np.where(X_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'] < -1, True, False))
@@ -1317,7 +1315,7 @@ with tab2: #minh
                     except Exception as e:
                             print(f"An error occurred while loading the model from the file: {e}")
     
-    
+                '''working'''
                 # Split the dataset into features (X) and target (y)
                 X = X_final_scaled.drop("Revenue", axis=1)
                 y = X_final_scaled["Revenue"]
