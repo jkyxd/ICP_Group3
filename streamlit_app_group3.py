@@ -1406,7 +1406,7 @@ with tab3: #javier
     truck_id = st.selectbox("Select your Truck ID", truck_ids)
     if truck_id:
             st.success(f"Your selected Truck ID '{truck_id}' has been saved!")
-            weadf=load_weadf()
+        
         
     st.subheader('2. Specify the number of hours your truck is working for')
 
@@ -1471,13 +1471,13 @@ with tab3: #javier
         st.warning("Please enter a valid date in the format 'YYYY-M-D'.")
     st.subheader('4. Optimal shift timing will be recommended to you based on the forecasted total average revenue across all locations')
 
-    query = 'SELECT * FROM "weadf_trend" WHERE DATE = \'{}\''.format(for_weadf)
+    # query = 'SELECT * FROM "weadf_trend" WHERE DATE = \'{}\''.format(for_weadf)
 
-    session.use_schema("ANALYTICS")
-    weadf=session.sql(query).toPandas()
-    weadf['LOCATION_ID']=weadf['LOCATION_ID'].astype('str')
-    weadf['WEATHERCODE']=weadf['WEATHERCODE'].astype('int64')
-    weadf['H']=weadf['H'].astype('int64')
+    # session.use_schema("ANALYTICS")
+    # weadf=session.sql(query).toPandas()
+    # weadf['LOCATION_ID']=weadf['LOCATION_ID'].astype('str')
+    # weadf['WEATHERCODE']=weadf['WEATHERCODE'].astype('int64')
+    # weadf['H']=weadf['H'].astype('int64')
 
 
     def find_optimal_hour(truck_id,date,no_of_hours):
