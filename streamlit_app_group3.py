@@ -62,13 +62,6 @@ def load_x_final_scaled():
     df=pd.read_csv('x_final_scaled.csv')
     return df
 
-@st.cache_data
-def load_weadf():
-    
-    query = 'SELECT * FROM "weadf_trend"'
-    session.use_schema("ANALYTICS")
-    weadf=session.sql(query).toPandas()
-    return weadf
 tab1,tab2,tab3,tab4,tab5 = st.tabs(["Routing Map", "Revenue Forecasting", "Optimal Shift Timing Recommendation",'tab4','tab5'])
 
 #Code to get the updated model from asg2
@@ -1468,16 +1461,18 @@ with tab3: #javier
             mask = month_mask & day_mask & dow_mask & wom_mask
             input_df.loc[mask, 'PUBLIC_HOLIDAY'] = 1
     
-        query = 'SELECT * FROM "weadf_trend" WHERE DATE = \'{}\''.format(for_weadf)
+        
+    elif date.strip() != "":
+        st.warning("Please enter a valid date in the format 'YYYY-M-D'.")
+    st.subheader('4. Optimal shift timing will be recommended to you based on the forecasted total average revenue across all locations')
+
+    query = 'SELECT * FROM "weadf_trend" WHERE DATE = \'{}\''.format(for_weadf)
 
         session.use_schema("ANALYTICS")
         weadf=session.sql(query).toPandas()
         weadf['LOCATION_ID']=weadf['LOCATION_ID'].astype('str')
         weadf['WEATHERCODE']=weadf['WEATHERCODE'].astype('int64')
         weadf['H']=weadf['H'].astype('int64')
-    elif date.strip() != "":
-        st.warning("Please enter a valid date in the format 'YYYY-M-D'.")
-    st.subheader('4. Optimal shift timing will be recommended to you based on the forecasted total average revenue across all locations')
 
 
     def find_optimal_hour(truck_id,date,no_of_hours):
