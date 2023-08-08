@@ -1289,7 +1289,7 @@ with tab2: #minh
 
                 if selected_model == 'Old Asg2 Model':
                     try:
-                        xgb = joblib.load('model.joblib')
+                        model_per = joblib.load('model.joblib')
                     except Exception as e:
                             print(f"An error occurred while loading the model from the file: {e}")
                     # Winsorize the target and some features to reduce the impact of outliers
@@ -1299,7 +1299,7 @@ with tab2: #minh
                 
                 elif selected_model == 'Updated Asg2 Model':
                     try:
-                        xgb = joblib.load('updated_old_model.joblib')
+                        model_per = joblib.load('updated_old_model.joblib')
                     except Exception as e:
                             print(f"An error occurred while loading the model from the file: {e}")
                     #Trimming Outliers for Holdout Graph
@@ -1311,11 +1311,10 @@ with tab2: #minh
 
                 else:
                     try:
-                        xgb = joblib.load('model.joblib')
+                        model_per = joblib.load('model.joblib')
                     except Exception as e:
                             print(f"An error occurred while loading the model from the file: {e}")
     
-                '''working'''
                 # Split the dataset into features (X) and target (y)
                 X = X_final_scaled.drop("Revenue", axis=1)
                 y = X_final_scaled["Revenue"]
@@ -1327,20 +1326,15 @@ with tab2: #minh
                 # Create a DataFrame with holdout values and predicted values
                 df_predictions = X_holdout.copy()
                 df_predictions['Holdout'] = y_holdout
-                holdout_predictions = xgb.predict(X_holdout[['TRUCK_ID', 'HOUR', 'MONTH', 'DOW', 'DAY', 'PUBLIC_HOLIDAY', 'LAT', 'LONG', 'LOCATION_ID', 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE', 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE', 
-                                        'WEATHERCODE', 'MENU_TYPE_GYROS_ENCODED', 'MENU_TYPE_CREPES_ENCODED', 'MENU_TYPE_BBQ_ENCODED', 'MENU_TYPE_SANDWICHES_ENCODED', 'MENU_TYPE_Mac & Cheese_encoded', 'MENU_TYPE_POUTINE_ENCODED', 
-                                        'MENU_TYPE_ETHIOPIAN_ENCODED', 'MENU_TYPE_TACOS_ENCODED', 'MENU_TYPE_Ice Cream_encoded', 'MENU_TYPE_Hot Dogs_encoded', 'MENU_TYPE_CHINESE_ENCODED', 'MENU_TYPE_Grilled Cheese_encoded', 
-                                        'MENU_TYPE_VEGETARIAN_ENCODED', 'MENU_TYPE_INDIAN_ENCODED', 'MENU_TYPE_RAMEN_ENCODED', 'CITY_SEATTLE_ENCODED', 'CITY_DENVER_ENCODED', 'CITY_San Mateo_encoded', 'CITY_New York City_encoded', 
-                                        'CITY_BOSTON_ENCODED', 'REGION_NY_ENCODED', 'REGION_MA_ENCODED', 'REGION_CO_ENCODED', 'REGION_WA_ENCODED', 'REGION_CA_ENCODED']])
+                holdout_predictions = model_per.predict(X_holdout)
                 df_predictions['Predicted'] = holdout_predictions
-                '''working 2'''
+
                 # Add a column for the differences
                 df_predictions['Difference'] = df_predictions['Predicted'] - df_predictions['Holdout']
     
                 # Get feature importance as a DataFrame
-                feature_importance = pd.DataFrame({'Feature': X_final_scaled.drop(columns='Revenue').columns, 'Importance': xgb.feature_importances_})
+                feature_importance = pd.DataFrame({'Feature': X_final_scaled.drop(columns='Revenue').columns, 'Importance': model_per.feature_importances_})
 
-                '''working 3'''
                 # Display the feature importance DataFrame
                 st.subheader('Feature Importance')
                 st.dataframe(feature_importance)
