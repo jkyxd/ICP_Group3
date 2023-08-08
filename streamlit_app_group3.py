@@ -1277,7 +1277,7 @@ with tab2: #minh
         except Exception as e:
             print(f"An error occurred while processing the data: {e}")
 
-        selected_model = st.selectbox("Select a ML Model to see Performance", ['Old Asg2 Model', 'Updated Asg2 Model', 'Improved Asg3 Model (Main)'])
+        selected_model = st.selectbox("Select a ML Model to see Performance", ['Old Asg2 Model', 'Updated Asg2 Model (Fixed)', 'Improved Asg3 Model (Main)'])
         try:
             # Create a button to show feature importance and performance
             if st.button('Show Model Performance'):
@@ -1297,7 +1297,7 @@ with tab2: #minh
                     X_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'] = winsorise(X_final_scaled, 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE', X_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].quantile(0.85), X_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].quantile(0))
                     X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'] = winsorise(X_final_scaled, 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE', X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].quantile(0.8), X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].quantile(0.5))
                 
-                elif selected_model == 'Updated Asg2 Model':
+                elif selected_model == 'Updated Asg2 Model (Fixed)':
                     try:
                         model_per = joblib.load('updated_old_model.joblib')
                     except Exception as e:
