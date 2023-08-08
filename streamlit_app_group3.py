@@ -29,6 +29,7 @@ connection_parameters = { "account": 'hiioykl-ix77996',"user": 'JAVIER',"passwor
 session = Session.builder.configs(connection_parameters).create()
 X_final_scaled=pd.read_csv('x_final_scaled.csv')
 unique_location_ids = X_final_scaled['LOCATION_ID'].unique()
+testing=session.sql('SELECT * FROM TRUCK')
 # Create a list to store the tables data
 table_data = []
 # Create a DataFrame to store the table data
