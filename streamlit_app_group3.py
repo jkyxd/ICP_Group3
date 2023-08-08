@@ -47,10 +47,10 @@ for location_id in unique_location_ids:
 st.title('SpeedyBytes 🚚')
 st.image('speedybytes_icon2.jpg',  width=600)
 
-query = 'SELECT * FROM "weadf_trend" WHERE DATE = 2022-09-09'
+# query = 'SELECT * FROM "weadf_trend" WHERE DATE = 2022-09-09'
 
-session.use_schema("ANALYTICS")
-weadf=session.sql(query).toPandas()
+# session.use_schema("ANALYTICS")
+# weadf=session.sql(query).toPandas()
 # st.image('speedybytes_icon2.jpg',width=600)
 @st.cache_data  #for caching the csvs
 def load_truck_data():
