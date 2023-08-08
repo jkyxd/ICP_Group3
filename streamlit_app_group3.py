@@ -1418,7 +1418,7 @@ with tab3: #javier
             truck_df=truck_df.drop(['index'],axis=1)
     
     
-        #     city = truck_df['PRIMARY_CITY'].iloc[0]
+            city = truck_df['PRIMARY_CITY'].iloc[0]
         
         #     #query = "SELECT * FROM LOCATION WHERE CITY = '{}'".format(city)
         #     #session.use_schema('RAW_POS')
