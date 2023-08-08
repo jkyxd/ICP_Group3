@@ -1411,7 +1411,7 @@ with tab3: #javier
         #     #query = "SELECT * FROM TRUCK"
         #     #truck_df=session.sql(query).toPandas()
         #     #truck_df.head(30)
-            truck_df.to_csv('truck_df.csv',index=False)
+            #truck_df.to_csv('truck_df.csv',index=False)
             truck_df=pd.read_csv('truck_df.csv')
             truck_df=truck_df[truck_df['TRUCK_ID']==truck_id]
             truck_df=truck_df.reset_index()
