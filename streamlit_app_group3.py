@@ -33,6 +33,26 @@ unique_location_ids = X_final_scaled['LOCATION_ID'].unique()
 table_data = []
 # Create a DataFrame to store the table data
 df_unique_locations_lat_long = pd.DataFrame(columns=["Location ID", "Latitude", "Longitude"])
+public_holidays = [
+    {'Month': 7, 'Day': 4, 'DOW': None, 'WOM': None},  # 4th of July
+    {'Month': 12, 'Day': 24, 'DOW': None, 'WOM': None},  # Christmas Eve
+    {'Month': 12, 'Day': 25, 'DOW': None, 'WOM': None},  # Christmas Day
+    {'Month': 10, 'Day': None, 'DOW': '0', 'WOM': 2},  # Columbus Day (second Monday in October)
+    {'Month': 6, 'Day': 19, 'DOW': None, 'WOM': None},  # Juneteenth
+    {'Month': 9, 'Day': None, 'DOW': '0', 'WOM': 1},  # Labor Day (first Monday in September)
+    {'Month': 1, 'Day': None, 'DOW': '0', 'WOM': 3},  # Martin Luther King, Jr. Day (third Monday in January)
+    {'Month': 5, 'Day': None, 'DOW': '0', 'WOM': -1},  # Memorial Day (last Monday in May)
+    {'Month': 1, 'Day': 1, 'DOW': None, 'WOM': None},  # New Year's Day
+    {'Month': 12, 'Day': 31, 'DOW': None, 'WOM': None},  # New Year's Eve
+    {'Month': 11, 'Day': None, 'DOW': '3', 'WOM': 4},  # Thanksgiving Day (fourth Thursday in November)
+    {'Month': 11, 'Day': None, 'DOW': '2', 'WOM': 4},  # Thanksgiving Eve (fourth Wednesday in November)
+    {'Month': 2, 'Day': 14, 'DOW': None, 'WOM': None},  # Valentine's Day
+    {'Month': 11, 'Day': 11, 'DOW': None, 'WOM': None},  # Veterans Day
+    {'Month': 10, 'Day': 31, 'DOW': None, 'WOM': None},  # Halloween
+    {'Month': 3, 'Day': 17, 'DOW': None, 'WOM': None},  # St. Patrick's Day
+    {'Month': 11, 'Day': 25, 'DOW': '4', 'WOM': None},  # Black Friday
+    {'Month': 12, 'Day': 26, 'DOW': None, 'WOM': None},  # Boxing Day
+]
 
 # Iterate over each unique location ID
 for location_id in unique_location_ids:
