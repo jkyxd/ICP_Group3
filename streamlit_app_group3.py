@@ -1350,70 +1350,70 @@ with tab3: #javier
         
         # user input
         
-        # datetime_object = datetime.datetime.strptime(date, '%Y-%m-%d')
+        datetime_object = datetime.datetime.strptime(date, '%Y-%m-%d')
         
         
-        # input_df = pd.DataFrame({'TRUCK_ID': [truck_id],'date': [date]})
+        input_df = pd.DataFrame({'TRUCK_ID': [truck_id],'date': [date]})
     
-        # #seperate date into month, dow, day, public_holiday
-        # input_df['date'] = pd.to_datetime(input_df['date'])
-        # input_df['MONTH'] = input_df['date'].dt.month
-        # input_df['DOW'] = input_df['date'].dt.weekday
-        # input_df['DAY'] = input_df['date'].dt.day
-        # input_df['WOM'] = (input_df['DAY'] - 1) // 7 + 1
-        # input_df['YEAR'] = input_df['date'].dt.year
+        #seperate date into month, dow, day, public_holiday
+        input_df['date'] = pd.to_datetime(input_df['date'])
+        input_df['MONTH'] = input_df['date'].dt.month
+        input_df['DOW'] = input_df['date'].dt.weekday
+        input_df['DAY'] = input_df['date'].dt.day
+        input_df['WOM'] = (input_df['DAY'] - 1) // 7 + 1
+        input_df['YEAR'] = input_df['date'].dt.year
         
-        # public_holidays = [
-        #     {'Month': 7, 'Day': 4, 'DOW': None, 'WOM': None},  # 4th of July
-        #     {'Month': 12, 'Day': 24, 'DOW': None, 'WOM': None},  # Christmas Eve
-        #     {'Month': 12, 'Day': 25, 'DOW': None, 'WOM': None},  # Christmas Day
-        #     {'Month': 10, 'Day': None, 'DOW': '0', 'WOM': 2},  # Columbus Day (second Monday in October)
-        #     {'Month': 6, 'Day': 19, 'DOW': None, 'WOM': None},  # Juneteenth
-        #     {'Month': 9, 'Day': None, 'DOW': '0', 'WOM': 1},  # Labor Day (first Monday in September)
-        #     {'Month': 1, 'Day': None, 'DOW': '0', 'WOM': 3},  # Martin Luther King, Jr. Day (third Monday in January)
-        #     {'Month': 5, 'Day': None, 'DOW': '0', 'WOM': -1},  # Memorial Day (last Monday in May)
-        #     {'Month': 1, 'Day': 1, 'DOW': None, 'WOM': None},  # New Year's Day
-        #     {'Month': 12, 'Day': 31, 'DOW': None, 'WOM': None},  # New Year's Eve
-        #     {'Month': 11, 'Day': None, 'DOW': '3', 'WOM': 4},  # Thanksgiving Day (fourth Thursday in November)
-        #     {'Month': 11, 'Day': None, 'DOW': '2', 'WOM': 4},  # Thanksgiving Eve (fourth Wednesday in November)
-        #     {'Month': 2, 'Day': 14, 'DOW': None, 'WOM': None},  # Valentine's Day
-        #     {'Month': 11, 'Day': 11, 'DOW': None, 'WOM': None},  # Veterans Day
-        #     {'Month': 10, 'Day': 31, 'DOW': None, 'WOM': None},  # Halloween
-        #     {'Month': 3, 'Day': 17, 'DOW': None, 'WOM': None},  # St. Patrick's Day
-        #     {'Month': 11, 'Day': 25, 'DOW': '4', 'WOM': None},  # Black Friday
-        #     {'Month': 12, 'Day': 26, 'DOW': None, 'WOM': None},  # Boxing Day
-        # ]
+        public_holidays = [
+            {'Month': 7, 'Day': 4, 'DOW': None, 'WOM': None},  # 4th of July
+            {'Month': 12, 'Day': 24, 'DOW': None, 'WOM': None},  # Christmas Eve
+            {'Month': 12, 'Day': 25, 'DOW': None, 'WOM': None},  # Christmas Day
+            {'Month': 10, 'Day': None, 'DOW': '0', 'WOM': 2},  # Columbus Day (second Monday in October)
+            {'Month': 6, 'Day': 19, 'DOW': None, 'WOM': None},  # Juneteenth
+            {'Month': 9, 'Day': None, 'DOW': '0', 'WOM': 1},  # Labor Day (first Monday in September)
+            {'Month': 1, 'Day': None, 'DOW': '0', 'WOM': 3},  # Martin Luther King, Jr. Day (third Monday in January)
+            {'Month': 5, 'Day': None, 'DOW': '0', 'WOM': -1},  # Memorial Day (last Monday in May)
+            {'Month': 1, 'Day': 1, 'DOW': None, 'WOM': None},  # New Year's Day
+            {'Month': 12, 'Day': 31, 'DOW': None, 'WOM': None},  # New Year's Eve
+            {'Month': 11, 'Day': None, 'DOW': '3', 'WOM': 4},  # Thanksgiving Day (fourth Thursday in November)
+            {'Month': 11, 'Day': None, 'DOW': '2', 'WOM': 4},  # Thanksgiving Eve (fourth Wednesday in November)
+            {'Month': 2, 'Day': 14, 'DOW': None, 'WOM': None},  # Valentine's Day
+            {'Month': 11, 'Day': 11, 'DOW': None, 'WOM': None},  # Veterans Day
+            {'Month': 10, 'Day': 31, 'DOW': None, 'WOM': None},  # Halloween
+            {'Month': 3, 'Day': 17, 'DOW': None, 'WOM': None},  # St. Patrick's Day
+            {'Month': 11, 'Day': 25, 'DOW': '4', 'WOM': None},  # Black Friday
+            {'Month': 12, 'Day': 26, 'DOW': None, 'WOM': None},  # Boxing Day
+        ]
         
-        # # Iterate over the public holidays and create the 'public_holiday' column
-        # input_df['PUBLIC_HOLIDAY'] = 0
-        # for holiday in public_holidays:
-        #     month_mask = input_df['date'].dt.month == holiday['Month']
-        #     day_mask = input_df['date'].dt.day == holiday['Day']
-        #     dow_mask = input_df['date'].dt.dayofweek == int(holiday['DOW']) if holiday['DOW'] is not None else True
-        #     wom_mask = (input_df['date'].dt.day - 1) // 7 + 1 == holiday['WOM'] if holiday['WOM'] is not None else True
-        #     mask = month_mask & day_mask & dow_mask & wom_mask
-        #     input_df.loc[mask, 'PUBLIC_HOLIDAY'] = 1
+        # Iterate over the public holidays and create the 'public_holiday' column
+        input_df['PUBLIC_HOLIDAY'] = 0
+        for holiday in public_holidays:
+            month_mask = input_df['date'].dt.month == holiday['Month']
+            day_mask = input_df['date'].dt.day == holiday['Day']
+            dow_mask = input_df['date'].dt.dayofweek == int(holiday['DOW']) if holiday['DOW'] is not None else True
+            wom_mask = (input_df['date'].dt.day - 1) // 7 + 1 == holiday['WOM'] if holiday['WOM'] is not None else True
+            mask = month_mask & day_mask & dow_mask & wom_mask
+            input_df.loc[mask, 'PUBLIC_HOLIDAY'] = 1
     
         # wdf=session.sql("Select * from ANALYTICS.WEATHER_DATA_API")
         # wdf=wdf.withColumn("H",F.substring(wdf["TIME"], 12, 2).cast("integer"))
         # wdf=wdf.withColumn("DATE",F.substring(wdf["TIME"], 0, 10))
         # wdf=wdf.select("WEATHERCODE","LOCATION_ID","H","DATE" )
         # wdf=wdf.to_pandas()
-        wdf=pd.read_csv('wdf.csv')
+        # wdf=pd.read_csv('wdf.csv')
     
         average_revenue_for_hour=pd.DataFrame(columns=['TRUCK_ID','HOUR','AVERAGE REVENUE PER HOUR'])
         #TODO for loop testing - change hour, sum1,sum2,weathercode
-        # for x in range(8,24):
+        for x in range(8,24):
         #     #session.use_schema("RAW_POS")
         #     #query = "SELECT * FROM TRUCK WHERE TRUCK_ID = '{}'".format(truck_id)
         #     #query = "SELECT * FROM TRUCK"
         #     #truck_df=session.sql(query).toPandas()
         #     #truck_df.head(30)
-        #     #truck_df.to_csv('truck_df.csv',index=False)
-        #     truck_df=pd.read_csv('truck_df.csv')
-        #     truck_df=truck_df[truck_df['TRUCK_ID']==truck_id]
-        #     truck_df=truck_df.reset_index()
-        #     truck_df=truck_df.drop(['index'],axis=1)
+            truck_df.to_csv('truck_df.csv',index=False)
+            truck_df=pd.read_csv('truck_df.csv')
+            truck_df=truck_df[truck_df['TRUCK_ID']==truck_id]
+            truck_df=truck_df.reset_index()
+            truck_df=truck_df.drop(['index'],axis=1)
     
     
         #     city = truck_df['PRIMARY_CITY'].iloc[0]
@@ -1424,18 +1424,18 @@ with tab3: #javier
         #     #location_df=session.sql(query).toPandas()
         #     #location_df.head()
         #     #location_df.to_csv('location_df.csv',index=False)
-        #     location_df=pd.read_csv('location_df.csv')
-        #     location_df = location_df[location_df['CITY']==city]
-        #     city_locations = location_df.merge(df_unique_locations_lat_long, left_on='LOCATION_ID', right_on='Location ID', how='inner')
-        #     city_locations = city_locations[['LOCATION_ID','Latitude','Longitude']]
-        #     city_locations.rename(columns={"Latitude": "LAT"},inplace=True)
-        #     city_locations.rename(columns={"Longitude": "LONG"},inplace=True)
+            location_df=pd.read_csv('location_df.csv')
+            location_df = location_df[location_df['CITY']==city]
+            city_locations = location_df.merge(df_unique_locations_lat_long, left_on='LOCATION_ID', right_on='Location ID', how='inner')
+            city_locations = city_locations[['LOCATION_ID','Latitude','Longitude']]
+            city_locations.rename(columns={"Latitude": "LAT"},inplace=True)
+            city_locations.rename(columns={"Longitude": "LONG"},inplace=True)
         
-        #     loc_checker = city_locations.copy()
-        #     loc_checker['DATE'] = date
+            loc_checker = city_locations.copy()
+            loc_checker['DATE'] = date
             
-        #     loc_checker['DATE']=pd.to_datetime(loc_checker['DATE'],format='%Y-%m-%d')
-        #     loc_checker['DATE']=loc_checker['DATE'].astype('str')
+            loc_checker['DATE']=pd.to_datetime(loc_checker['DATE'],format='%Y-%m-%d')
+            loc_checker['DATE']=loc_checker['DATE'].astype('str')
         #     weadf = pd.merge(wdf, loc_checker, on=['LOCATION_ID', 'DATE']).drop_duplicates()
         #     input_df['date']=input_df['date'].astype('str')
         #     input_df['HOUR']=x
@@ -1496,23 +1496,23 @@ with tab3: #javier
        
         
         
-        # #Initialize variables
-        # average_revenue_for_hour['rolling_average']=0
-        # working_hours=hours-1
-        # max_revenue = 0
-        # optimal_hours = []
-        # for i in range(len(average_revenue_for_hour) - working_hours):
+        # # #Initialize variables
+        # # average_revenue_for_hour['rolling_average']=0
+        # # working_hours=hours-1
+        # # max_revenue = 0
+        # # optimal_hours = []
+        # # for i in range(len(average_revenue_for_hour) - working_hours):
             
-        #     total_revenue=0
-        #     # Calculate the total revenue for the current 5-hour window
-        #     total_revenue = average_revenue_for_hour.loc[i:i+working_hours, 'AVERAGE REVENUE PER HOUR'].sum()
-        #     average_revenue_for_hour['rolling_average'].loc[i] = total_revenue
+        # #     total_revenue=0
+        # #     # Calculate the total revenue for the current 5-hour window
+        # #     total_revenue = average_revenue_for_hour.loc[i:i+working_hours, 'AVERAGE REVENUE PER HOUR'].sum()
+        # #     average_revenue_for_hour['rolling_average'].loc[i] = total_revenue
             
-        #      # Check if the current total revenue is greater than the previous maximum
-        #     if total_revenue > max_revenue:
-        #         max_revenue = total_revenue
-        #         optimal_hours = average_revenue_for_hour.loc[i:i+working_hours, 'HOUR'].tolist()
-        # values=[optimal_hours,max_revenue]
+        # #      # Check if the current total revenue is greater than the previous maximum
+        # #     if total_revenue > max_revenue:
+        # #         max_revenue = total_revenue
+        # #         optimal_hours = average_revenue_for_hour.loc[i:i+working_hours, 'HOUR'].tolist()
+        # # values=[optimal_hours,max_revenue]
 
 
         values=[1,1]
