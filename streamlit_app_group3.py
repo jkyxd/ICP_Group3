@@ -1329,13 +1329,14 @@ with tab2: #minh
                 df_predictions['Holdout'] = y_holdout
                 holdout_predictions = xgb.predict(X_holdout)
                 df_predictions['Predicted'] = holdout_predictions
-    
+                '''working 2'''
                 # Add a column for the differences
                 df_predictions['Difference'] = df_predictions['Predicted'] - df_predictions['Holdout']
     
                 # Get feature importance as a DataFrame
                 feature_importance = pd.DataFrame({'Feature': X_final_scaled.drop(columns='Revenue').columns, 'Importance': xgb.feature_importances_})
-    
+
+                '''working 3'''
                 # Display the feature importance DataFrame
                 st.subheader('Feature Importance')
                 st.dataframe(feature_importance)
