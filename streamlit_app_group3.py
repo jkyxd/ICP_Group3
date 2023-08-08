@@ -48,6 +48,53 @@ st.image('speedybytes_icon2.jpg',  width=600)
 # st.image('speedybytes_icon2.jpg',width=600)
 tab1,tab2,tab3,tab4,tab5 = st.tabs(["Routing Map", "Revenue Forecasting", "Optimal Shift Timing Recommendation",'tab4','tab5'])
 
+#Code to get the updated model from asg2
+def updated_old_model():
+    session.use_schema("ANALYTICS")
+    X_final_scaled=session.sql('Select * from "Sales_Forecast_Training_Data"').to_pandas()
+    X_final_scaled.rename(columns={"Profit": "Revenue"},inplace=True)
+
+    X_final_scaled = trim_outliers(X_final_scaled, 'Revenue')
+
+    outliers_IV = np.where(X_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'] >1.7, True, np.where(X_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'] < -1, True, False))
+    X_final_scaled = X_final_scaled.loc[~outliers_IV]
+    outliers_IV = np.where(X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'] >0.7, True, np.where(X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'] < -0.7, True, False))
+    X_final_scaled = X_final_scaled.loc[~outliers_IV]
+
+    # Split the dataset into features (X) and target (y)
+    X = X_final_scaled.drop("Revenue",axis=1)
+    y = X_final_scaled["Revenue"]
+    # Split the dataset into training and testing datasets
+    X_training, X_holdout, y_training, y_holdout = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X_training, y_training, test_size=0.2, random_state=42)
+    xgb = XGBRegressor(objective="reg:squarederror", learning_rate=0.01523, max_depth=9, colsample_bytree=0.578, n_estimators=641, subsample=0.854)
+    xgb.fit(X_train, y_train, early_stopping_rounds=10, eval_set=[(X_test, y_test)])
+    print('Train MSE is: ', mean_squared_error(xgb.predict(X_train), y_train))
+    print('Test MSE is: ', mean_squared_error(xgb.predict(X_test), y_test))
+    print()
+    print('Train RMSE is: ',  math.sqrt(mean_squared_error(xgb.predict(X_train), y_train)))
+    print('Test RMSE is: ', math.sqrt(mean_squared_error(xgb.predict(X_test), y_test)))
+    print()
+    print('Train MAE is: ', mean_absolute_error(xgb.predict(X_train), y_train))
+    print('Test MAE is: ', mean_absolute_error(xgb.predict(X_test), y_test))
+    print()
+    print('Train R2 is: ', r2_score(xgb.predict(X_train), y_train))
+    print('Test R2 is: ', r2_score(xgb.predict(X_test), y_test))
+    print('Holdout MSE is: ', mean_squared_error(df_predictions['Predicted'], df_predictions['Holdout']))
+    print()
+    print('Holdout RMSE is: ',  math.sqrt(mean_squared_error(df_predictions['Predicted'], df_predictions['Holdout'])))
+    print()
+    print('Holdout MAE is: ', mean_absolute_error(df_predictions['Predicted'], df_predictions['Holdout']))
+    print()
+    print('Holdout R2 is: ', r2_score(df_predictions['Predicted'], df_predictions['Holdout']))
+    joblib.dump(xgb, 'updated_old_model.joblib')
+
+#TRIMMING CODE
+def trim_outliers(dataframe, column, lower_percentile=0.01, upper_percentile=0.99):
+    lower_bound = dataframe[column].quantile(lower_percentile)
+    upper_bound = dataframe[column].quantile(upper_percentile)
+    return dataframe[(dataframe[column] >= lower_bound) & (dataframe[column] <= upper_bound)]
+
 with tab1: #Nathan
     X_final_scaled=pd.read_csv('x_final_scaled.csv')
     truck_location_df=pd.read_csv('truck_manager_merged_df.csv')
@@ -922,7 +969,6 @@ with tab2: #minh
         except Exception as e:
             print(f"An error occurred while creating the x_holdout graph: {e}")
     
-    import joblib
     try:
         xgb = joblib.load('model.joblib')
     except Exception as e:
@@ -1230,19 +1276,47 @@ with tab2: #minh
                 st.write('Dollars earned by km travelled: $', rev_dis, '/km')
         except Exception as e:
             print(f"An error occurred while processing the data: {e}")
-    
+
+        selected_model = st.selectbox("Select a ML Model to see Performance", ['Old Asg2 Model', 'Updated Asg2 Model', 'Improved Asg3 Model (Main)'])
         try:
             # Create a button to show feature importance and performance
             if st.button('Show Model Performance'):
+
+
+                
                 # Load data from the Snowflake database
                 session.use_schema("ANALYTICS")
                 X_final_scaled = session.sql('Select * from "Sales_Forecast_Training_Data";').to_pandas()
                 X_final_scaled.rename(columns={"Profit": "Revenue"}, inplace=True)
+
+                if selected_model == 'Old Asg2 Model':
+                    try:
+                        xgb = joblib.load('model.joblib')
+                    except Exception as e:
+                            print(f"An error occurred while loading the model from the file: {e}")
+                    # Winsorize the target and some features to reduce the impact of outliers
+                    X_final_scaled['Revenue'] = winsorise(X_final_scaled, 'Revenue', X_final_scaled['Revenue'].quantile(0.85), X_final_scaled['Revenue'].quantile(0))
+                    X_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'] = winsorise(X_final_scaled, 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE', X_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].quantile(0.85), X_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].quantile(0))
+                    X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'] = winsorise(X_final_scaled, 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE', X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].quantile(0.8), X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].quantile(0.5))
+                
+                elif selected_model == 'Updated Asg2 Model':
+                    try:
+                        xgb = joblib.load('updated_old_model.joblib')
+                    except Exception as e:
+                            print(f"An error occurred while loading the model from the file: {e}")
+                    #Trimming Outliers for Holdout Graph
+                    X_final_scaled = trim_outliers(X_final_scaled, 'Revenue')
+                    outliers_IV = np.where(X_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'] >1.7, True, np.where(X_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'] < -1, True, False))
+                    X_final_scaled = X_final_scaled.loc[~outliers_IV]
+                    outliers_IV = np.where(X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'] >0.7, True, np.where(X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'] < -0.7, True, False))
+                    X_final_scaled = X_final_scaled.loc[~outliers_IV]
+
+                else:
+                    try:
+                        xgb = joblib.load('model.joblib')
+                    except Exception as e:
+                            print(f"An error occurred while loading the model from the file: {e}")
     
-                # Winsorize the target and some features to reduce the impact of outliers
-                X_final_scaled['Revenue'] = winsorise(X_final_scaled, 'Revenue', X_final_scaled['Revenue'].quantile(0.85), X_final_scaled['Revenue'].quantile(0))
-                X_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'] = winsorise(X_final_scaled, 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE', X_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].quantile(0.85), X_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].quantile(0))
-                X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'] = winsorise(X_final_scaled, 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE', X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].quantile(0.8), X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].quantile(0.5))
     
                 # Split the dataset into features (X) and target (y)
                 X = X_final_scaled.drop("Revenue", axis=1)
