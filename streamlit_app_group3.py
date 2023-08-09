@@ -1419,7 +1419,7 @@ with tabs[3]: #Aryton
     df_selected_loc =  df_loc[df_loc['TRUCK_ID'].isin(truck_id)]
     selected_loc_list = df_selected_loc['LOCATION_ID'].unique().tolist()
     
-    with st.form("RunMapForm"):
+    with st.form("RunMapForm7"):
         if st.form_submit_button("Run Map"):
     
             if truck_id:
