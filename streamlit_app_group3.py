@@ -75,7 +75,7 @@ st.image('speedybytes_icon2.jpg',  width=600)
 
 # session.use_schema("ANALYTICS")
 # weadf=session.sql(query).toPandas()
-st.image('speedybytes_icon2.jpg',width=600)
+# st.image('speedybytes_icon2.jpg',width=600)
 @st.cache_data  #for caching the csvs
 def load_truck_data():
     df = pd.read_csv('truck_df.csv')
