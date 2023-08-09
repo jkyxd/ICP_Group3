@@ -894,7 +894,7 @@ with tabs[2]: #javier
     if is_valid_date_format(date):
         st.success(f"Your input date '{date}' has been saved !")
         date_d=pd.to_datetime(date)
-        datetime_object = datetime.datetime.strptime(date, '%Y-%m-%d')
+        datetime_object = datetime.strptime(date, '%Y-%m-%d')
         
         
         input_df = pd.DataFrame({'TRUCK_ID': [truck_id],'date': [date]})
