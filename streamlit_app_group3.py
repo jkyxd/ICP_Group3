@@ -829,23 +829,23 @@ with tabs[0]: #Nathan
     
     # Add a "Run Map" button
     with st.form("RunMapForm"):
-            st.form_submit_button("Run Map")
+            if st.form_submit_button("Run Map"):
     
-            if selected_truck_ids:
-                    if selected_truck_ids != st.session_state.prev_selected_truck_ids:
-                            # Save the current selected truck IDs to session state
-                            selected_truck_ids_str = ', '.join(str(truck_id) for truck_id in selected_truck_ids)
-                            st.success(f"Your selected Truck IDs {selected_truck_ids_str} have been saved!")
-                            # Create the map and display truck routes
-                            create_map(selected_truck_ids)
-                            for i in selected_truck_ids:
-                                st.session_state.prev_selected_truck_ids.append(selected_truck_ids[i])
-                    else:
-                            st.info("Selected truck IDs have not changed. The map has not been changed.")
-                            create_map(selected_truck_ids)
+                if selected_truck_ids:
+                        if selected_truck_ids != st.session_state.prev_selected_truck_ids:
+                                # Save the current selected truck IDs to session state
+                                selected_truck_ids_str = ', '.join(str(truck_id) for truck_id in selected_truck_ids)
+                                st.success(f"Your selected Truck IDs {selected_truck_ids_str} have been saved!")
+                                # Create the map and display truck routes
+                                create_map(selected_truck_ids)
+                        else:
+                                st.info("Selected truck IDs have not changed. The map has not been changed.")
+                                create_map(selected_truck_ids)
+                else:
+                        st.info("No truck IDs have been selected.")
             else:
-                    st.info("No truck IDs have been selected.")
-    
+                st.write('Awaiting command.....')
+
     map_placeholder = st.empty()
 
 
