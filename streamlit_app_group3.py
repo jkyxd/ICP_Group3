@@ -1202,7 +1202,7 @@ with tabs[3]: #Aryton
                 locationlist.append(temp)
     
     
-        if 27 in truck_id or 28 in truck_id:
+        if 17 in truck_id or 28 in truck_id or 21 in truck_id:
             if current_loc == 'Yes':
                 DEFAULT_LATITUDE = 39.750
                 DEFAULT_LONGITUDE = -104.991
@@ -1213,7 +1213,7 @@ with tabs[3]: #Aryton
                 DEFAULT_LONGITUDE = -104.966468
                 zoom = 10
     
-        elif 43 in truck_id or 44 in truck_id:
+        elif 43 in truck_id or 34 in truck_id:
             if current_loc == 'Yes':
                 DEFAULT_LATITUDE = 47.541
                 DEFAULT_LONGITUDE = -122.345
@@ -1237,6 +1237,22 @@ with tabs[3]: #Aryton
                 DEFAULT_LATITUDE = 42.337187
                 DEFAULT_LONGITUDE = -71.071033
                 zoom = 11
+    
+        elif 1 in truck_id or 2 in truck_id or 13 in truck_id: 
+        
+            if current_loc == 'Yes':
+                DEFAULT_LATITUDE = 37.553699
+                DEFAULT_LONGITUDE = -122.310166
+                curr_coords = [DEFAULT_LATITUDE, DEFAULT_LONGITUDE]
+    
+                zoom = 15
+    
+            else: 
+                DEFAULT_LATITUDE = 37.553699
+                DEFAULT_LONGITUDE = -122.310166
+                curr_coords = [DEFAULT_LATITUDE, DEFAULT_LONGITUDE]
+    
+                zoom = 13
     
             
     
@@ -1403,7 +1419,23 @@ with tabs[3]: #Aryton
     df_selected_loc =  df_loc[df_loc['TRUCK_ID'].isin(truck_id)]
     selected_loc_list = df_selected_loc['LOCATION_ID'].unique().tolist()
     
-    load_map()
+    with st.form("RunMapForm"):
+        if st.form_submit_button("Run Map"):
+    
+            if truck_id:
+                    if truck_id != st.session_state.prev_selected_truck_ids:
+                            # Save the current selected truck IDs to session state
+                            selected_truck_ids_str = ', '.join(str(truck_id) for truck_id in truck_id)
+                            st.success(f"Your selected Truck IDs {selected_truck_ids_str} have been saved!")
+                            # Create the map and display truck routes
+                            load_map()
+                    else:
+                            st.info("Selected truck IDs have not changed. The map has not been changed.")
+                            load_map()
+            else:
+                    st.info("No truck IDs have been selected.")
+        else:
+            st.write('Awaiting command.....')
     
     
     st.subheader('User Input Parameters')
