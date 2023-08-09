@@ -184,12 +184,12 @@ def train_ayrton_model():
 
 def train_nathan_model():
     xgb = XGBRegressor(objective= 'reg:squarederror',
-    learning_rate= 0.005
-    max_depth= 8
-    colsample_bytree= 0.8
-    n_estimators= 1000
-    subsample= 0.75
-    min_child_weight= 1
+    learning_rate= 0.005,
+    max_depth= 8,
+    colsample_bytree= 0.8,
+    n_estimators= 1000,
+    subsample= 0.75,
+    min_child_weight= 1,
     gamma= 0.2
     )
     xgb.fit(X_train, y_train, early_stopping_rounds=10, eval_set=[(X_test, y_test)])
