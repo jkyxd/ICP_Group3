@@ -899,7 +899,7 @@ with tabs[0]: #Nathan
         
     # Add a "Run Map" button
     with ("RunMapForm"):
-            if _submit_button("Run Map"):
+            if st.form_submit_button("Run Map"):
     
                 if selected_truck_ids:
                         if selected_truck_ids != st.session_state.prev_selected_truck_ids:
@@ -1420,7 +1420,7 @@ with tabs[3]: #Aryton
     selected_loc_list = df_selected_loc['LOCATION_ID'].unique().tolist()
     
     with ("RunMapForm7"):
-        if _submit_button("Run Map"):
+        if st.form_submit_button("Run Map"):
     
             if truck_id:
                     if truck_id != st.session_state.prev_selected_truck_ids:
@@ -1683,7 +1683,7 @@ with tabs[1]: #Vibu
             
     with st.form("RunMapForm2"):
         
-        if _submit_button("Run Map"):
+        if st.form_submit_button("Run Map"):
             if truck_filter:
             
                 if truck_filter != st.session_state.truck_fiter:
