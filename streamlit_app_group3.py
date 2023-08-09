@@ -64,7 +64,7 @@ for location_id in unique_location_ids:
                                                   "Latitude": [latitude],
                                                   "Longitude": [longitude]})],
                          ignore_index=True)
-#import plotly.express as px
+import plotly.express as px
 st.title('SpeedyBytes 🚚')
 st.image('speedybytes_icon2.jpg',  width=600)
 
@@ -88,7 +88,7 @@ def load_x_final_scaled():
     df=pd.read_csv('x_final_scaled.csv')
     return df
 
-tab1,tab2,tab3,tab4,tab5 = st.tabs(["Routing Map", "Revenue Forecasting", "Optimal Shift Timing Recommendation",'tab4','tab5'])
+tab1,tab2,tab3,tab4,tab5 = st.tabs(["Routing Map", "Current vs Usual Route", "Optimal Shift Timing Recommendation",'tab4','Sales Forecast'])
 
 #Code to get the updated model from asg2
 def updated_old_model():
@@ -365,7 +365,7 @@ with tab1: #Nathan
 
 
 
-with tab2: #minh
+with tab5: #minh
     import calendar
     def get_dates(year, month):
     
@@ -1648,11 +1648,11 @@ with tab4: #Aryton
     print('Aryton')
 
 
-with tab5: #vibu
     
    
-
-# read csv from a URL
+with tab2: 
+    st.title("Recomended Route vs Usual Route")
+    
     @st.cache_data
     def get_data() -> pd.DataFrame:
         df=pd.read_csv('truck_manager_merged_df.csv')
@@ -1683,97 +1683,204 @@ with tab5: #vibu
         
         return  df
 
-    df = get_data()
+    predicted_route = get_data()
     
     @st.cache_data
-    def get_sales_time() -> pd.DataFrame:
-        sales_over_time_df = df.copy()
-        sales_over_time_df['start_time'] = sales_over_time_df['start_time'].apply(lambda x: x[1:])
-        sales_over_time_df = sales_over_time_df.explode('start_time')
-        
-        sales_over_time_df = sales_over_time_df.explode('predicted_earning')
-        sales_over_time_df.drop_duplicates(subset=['predicted_earning', 'start_time'], inplace=True)
-        
-       
-
-        sales_over_time_df.sort_values(by='start_time', inplace=True)
-        
-        return sales_over_time_df
+    def get_usual_route() -> pd.DataFrame:
+        df=pd.read_csv("truck_usual_routine.csv")
+        df['sales'] = df['predicted_earning'].apply(lambda x: [int(float(i)) for i in x.strip('[]').split(',')])
+        df['total_sales']=df['sales'].apply(lambda x: sum(x))
+        df['start_time'] = df['start_time'].apply(lambda x: [int(float(i)) for i in x.strip('[]').split(',')])
+        return df 
     
-    sales_time =get_sales_time()
+    @st.cache_data
+    def get_lat_long() -> pd.DataFrame:
+        df=pd.read_csv("x_final_scaled.csv")
+        df.drop_duplicates(subset="LOCATION_ID")
         
+        return df[["LOCATION_ID","LAT","LONG"]]           
+        
+    
+    usual_route =get_usual_route()
+    location=get_lat_long()
+    
+    def calculate_kpis(data):
+        total_sales = data["total_sales"].sum().round(2)
+        total_working_hours = data["working_hour"].sum()
+        total_distance = data["total_distance_traveled"].sum().round(2)
+        distance_per_km =  (total_sales/total_distance).round(2)
+        return total_sales, total_working_hours, total_distance, distance_per_km
+    
     
     
    
+    truck_filter = st.selectbox("Select the Truck", pd.unique(predicted_route["Truck_ID"]))
+   
+    predicted_route= predicted_route[predicted_route["TRUCK_ID"] ==  truck_filter]
+    usual_route=usual_route[usual_route["Truck_ID"] ==  truck_filter]
     # dashboard title
-    st.title("Food Truck Competitor Analysis Dashboard")
+    
 
     # top-level filters
-    truck_filter = st.selectbox("Select the Truck", pd.unique(df["Truck_ID"]))
-    percentile_50 = df['total_sales'].quantile(0.5)
-    percentile_dis_50 = df['total_distance_traveled'].quantile(0.5)
-
-    # creating a single-element container
-    placeholder = st.empty()
-
- 
-
-  
-
-
+   
+    predicted_kpis = calculate_kpis(predicted_route)
+    usual_kpis = calculate_kpis(usual_route)
     
-     # dataframe filter
-    filter_df = df[df["Truck_ID"] ==truck_filter]
+    ##change in sales
+    st.subheader("Predicted Route")
+    with st.container():
+        kpi1,kpi2=st.columns(2)
+        kpi1.metric("Predicted increas from usual sales",str((((predicted_kpis[0]-usual_kpis[0])/usual_kpis[0])*100).round(2))+"%")
+        kpi2.metric("Predicted performace(compare to other truck)",predicted_route['Letter_Grade'].values[0])
+
+# Predicted Route KPIs
+    st.subheader("Predicted Route")
+    with st.container():
+        kpi1, kpi2, kpi3,kpi4,kpi5 = st.columns(5)
+        
+        kpi1.metric("Total Sales", predicted_kpis[0])
+        kpi2.metric("Total Working Hours", predicted_kpis[1])
+        kpi3.metric("Total Distance", predicted_kpis[2])
+        kpi4.metric("Dollar earned per km travelled", predicted_kpis[3])
+        kpi5.metric("color","beige")
+
+# Usual Route KPIs
+    st.subheader("Usual Route")
+    with st.container():
+        kpi1, kpi2, kpi3,kpi4,kpi5 = st.columns(5)
+        
+        kpi1.metric("Total Sales", usual_kpis[0])
+        kpi2.metric("Total Working Hours", usual_kpis[1])
+        kpi3.metric("Total Distance", usual_kpis[2])
+        kpi4.metric("Dollar earned per km travelled", usual_kpis[3])
+        kpi5.metric("color","red")
     
-    filter_sales_time = sales_time[sales_time["Truck_ID"] ==truck_filter]
+    data=predicted_route[["predicted_earning","location_visited"]]
+    data=data.rename(columns={"predicted_earning":"sales"})
+    data=data.append(usual_route[["sales","location_visited"]],ignore_index=True)
+    data["color"]=["black","purple"]
+    data["color_marker"]=["beige","light green"]
+    data=data.rename(columns={"location_visited":"location"})
+    
+        
+    def get_lat_long(location_list):
+        lat_list = []
+        long_list = []
+        for loc in location_list:
+            if loc in list(location["LOCATION_ID"]):
+                
+                
+                lat, long = location[location['LOCATION_ID']==loc]["LAT"].values[0],location[location['LOCATION_ID']==loc]["LONG"].values[0]
+                lat_list.append(lat)
+                long_list.append(long)
+            else:
+                lat_list.append(None)
+                long_list.append(None)
+        return lat_list, long_list
+     
+    #ors client
+    ors_client = ors.Client(key='5b3ce3597851110001cf624817eb9bc1474c4917b9dda7114d579034')
+    
+    # # Define a function to get the route between two points using ORS
+    def get_route(start_point, end_point):
+            radius = 500  # 10 kilometers
+            profile = 'driving-car'
+            try:
+                    # Get the route between the start and end points
+                    route = ors_client.directions(
+                    coordinates=[start_point, end_point],
+                    profile=profile,
+                    format='geojson',
+                    radiuses=[radius, radius]
+                    )
+                    return route
+    
+            except ors.exceptions.ApiError as e:
+                    print(e)
+                    return None
+                
+    def create_folium_map(data):
+        
+        location_list=data["location"].iloc[0].strip('[]').split(',')
+        loc_list=[]
+        for i in location_list:
+            loc_list.append(int(i))
+                
+        lat_list,long_list=get_lat_long(loc_list)
+        
+        m = folium.Map(location=[lat_list[0], long_list[0]], zoom_start=10)
+        
+        for index, row in data.iterrows():
+            
+    # Create a map centered on the mean latitude and longitude of the data
 
-
-    with placeholder.container():
-
-            # create three columns
-            kpi1, kpi2, kpi3,kpi4 = st.columns(4)
-                        
-            kpi1.metric( 
-                label="Predicted Performance",
-                 value=filter_df["Letter_Grade"].values[0],
-                 delta=None)
-
-            # fill in those three columns with respective metrics or KPIs
-            kpi2.metric(
-                label="Sales",
-                value=filter_df["total_sales"].sum(),
-                delta=filter_df["total_sales"].sum()-percentile_50
-            )
+            location_list=row["location"].strip('[]').split(',')
+            loc_list=[]
+            for i in location_list:
+                loc_list.append(int(i))
+                
+            lat_list,long_list=get_lat_long(loc_list)
             
         
+           
             
-            kpi3.metric(
-                label="Distance Travelled",
-                value=filter_df["total_distance_traveled"].sum().round(2),
-                delta=(filter_df["total_distance_traveled"].sum()-percentile_dis_50).round(2)
-            )
+            for location in location_list:
+                lat=lat_list[location_list.index(location)]
+                long=long_list[location_list.index(location)]
+                folium.Marker([lat, long],popup=('Truck Location {} \n '.format(location)),
+                                        icon=folium.Icon(color=row["color_marker"], icon_color="white", prefix='fa', icon='truck')
+                                        ).add_to(m)
+                
+            for i in range(len(lat_list) - 1):
+                start_point = [long_list[i], lat_list[i]]  # Corrected order: [long, lat]
+                end_point = [long_list[i + 1], lat_list[i + 1]]  # Corrected order: [long, lat]
+
+                # Check if the start point and end point are the same
+                if start_point != end_point:
+                    # Get the route between two consecutive points
+                    route = get_route(start_point, end_point)
+
+                        # Check if the route is found
+                    if route is not None:
+
+                        # print(route_coords)
+                        waypoints = list(dict.fromkeys(reduce(operator.concat, list(map(lambda step: step['way_points'], route['features'][0]['properties']['segments'][0]['steps'])))))
+
+                        folium.PolyLine(locations=[list(reversed(coord)) for coord in route['features'][0]['geometry']['coordinates']], color=row["color"]).add_to(m)
+
+                        # folium.PolyLine(locations=[list(reversed(route['features'][0]['geometry']['coordinates'][index])) for index in waypoints], color="red").add_to(m)
+        
+
+
+
+        st_folium(m, width=1500)
+    
+    
+    
+    
+    if 'truck_fiter' not in st.session_state:
+        st.session_state.truck_filter = None
             
-            kpi4.metric(
-                label="Working Hour",
-                value=filter_df["working_hour"].sum(),
-                delta=filter_df["working_hour"].sum()-df["working_hour"].median()
-            )
-
-                
-             
-
-            st.markdown("### Top 5 Trucks")
-                
-            df_sorted = df.sort_values(by='total_sales', ascending=False)
-            top_5_trucks = df_sorted.head(5)
-            top_5_trucks['Truck_ID'] = top_5_trucks['Truck_ID'].astype(str)
-            fig2 = px.bar(top_5_trucks, x='Truck_ID', y='total_sales', 
-             labels={'Truck_ID': 'Truck ID', 'Total_Earnings': 'Total Predicted Earnings'})
-            fig2.update_xaxes(type='category')
-
-            st.write(fig2)
-
-         
+    with st.form("RunMapForm"):
+        st.form_submit_button("Run Map")
+    
+        if truck_filter:
+            
+                if truck_filter != st.session_state.truck_filter:
+                            # Save the current selected truck IDs to session state
+                    selected_truck_ids_str = truck_filter
+                    st.success(f"Your selected Truck ID {selected_truck_ids_str} have been saved!")
+                    st.session_state.prev_selected_truck_ids = truck_filter
+                            # Create the map and display truck routes
+                    create_folium_map(data)
+                else:
+                            
+                    st.info("Selected truck IDs have not changed. The map has not been changed.")
+                    create_folium_map(data)
+        else:
+                st.info("No truck IDs have been selected.")
+    
+        map_placeholder = st.empty()
 
         
         
