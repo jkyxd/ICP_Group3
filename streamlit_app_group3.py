@@ -51,8 +51,6 @@ st.title('SpeedyBytes 🚚')
 @st.cache_data  #for caching the csvs
 
 
-@st.cache_data
-
 
 
 list_of_tabs = ["Routing Map", "Current vs Usual Route", "Optimal Shift Timing Recommendation", "Revenue By Location & Time", "Revenue Forecasting & Model Performance"]
