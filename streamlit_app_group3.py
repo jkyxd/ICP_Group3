@@ -25,7 +25,8 @@ from streamlit_javascript import st_javascript
 st.set_page_config(layout="wide")
 
 #Loading model and data
-model=joblib.load('model.joblib')
+model=joblib.load('best_new_model_compressed.joblib')
+old_model=joblib.load('model.joblib')
 old_updated_model=joblib.load('updated_old_model.joblib')
 connection_parameters = { "account": 'hiioykl-ix77996',"user": 'JAVIER',"password": '02B289223r04', "role": "ACCOUNTADMIN","database": "FROSTBYTE_TASTY_BYTES","warehouse": "COMPUTE_WH"}
 
@@ -90,7 +91,7 @@ def load_sales_pred():
 def load_x_final_scaled():
     df=pd.read_csv('x_final_scaled.csv')
     return df
-list_of_tabs = ["Routing Map", "Current vs Usual Route", "Optimal Shift Timing Recommendation", "tab4", "Sales Forecast"]
+list_of_tabs = ["Routing Map", "Current vs Usual Route", "Optimal Shift Timing Recommendation", "tab4", "Revenue Forecasting & Model Performance"]
 tabs = st.tabs(list_of_tabs)
 
 #Code to get the updated model from asg2
@@ -790,6 +791,7 @@ with tabs[0]: #Nathan
 
                 # Display the truck information table with colored cells and black text for color names
                 st.subheader('Truck Information')
+                st.caption('Click on the Truck IDs below for more information')
 
                 # Custom CSS style to display colored cells with white text and black text for color names
                 def style_color_cells(val):
@@ -800,7 +802,7 @@ with tabs[0]: #Nathan
                 
 
                 # Display the styled DataFrame using st.dataframe
-                st.write(styled_truck_info_df.to_html(),unsafe_allow_html=True)
+                st.write(styled_truck_info_df.to_html(), unsafe_allow_html=True, style="padding-bottom: 10px")
 
                 # Display the map with the selected truck routes
         st_folium(m, width=1500)
@@ -819,14 +821,14 @@ with tabs[0]: #Nathan
     # Filter the available trucks based on the chosen names
     available_trucks = truck_location_df[truck_location_df['Name'].isin(selected_names)]['Truck_ID'].tolist()
     
-    # Check if 'prev_selected_truck_ids' exists in session state
-    if 'prev_selected_truck_ids' not in st.session_state:
-        st.session_state.prev_selected_truck_ids = []
-    
     # Display the truck selection section
     st.subheader('Choose a truck 🚚')
     selected_truck_ids = st.multiselect("Select Truck IDs 🌮🍦", available_trucks)
-    
+
+    # Check if 'prev_selected_truck_ids' exists in session state
+    if 'prev_selected_truck_ids' not in st.session_state:
+        st.session_state.prev_selected_truck_ids = []
+        
     # Add a "Run Map" button
     with st.form("RunMapForm"):
             if st.form_submit_button("Run Map"):
@@ -847,10 +849,560 @@ with tabs[0]: #Nathan
                 st.write('Awaiting command.....')
 
     map_placeholder = st.empty()
+        
+
+with tabs[2]: #javier
+    X_final_scaled=load_x_final_scaled()
+    sales_pred=load_sales_pred()
+    X_final_scaled=X_final_scaled.merge(sales_pred["l_w5i8_DATE"].astype(str).str[:4].rename('YEAR'), left_index=True, right_index=True)
+    st.header('Optimal Shift Timing Recommendation')
+    st.subheader('Want to find out the optimal working hours for your truck?')
+    st.subheader('1. Specify your truck details')
+    truck_ids = [27,43,28,44,46,47]
+    truck_id = st.selectbox("Select your Truck ID", truck_ids)
+    if truck_id:
+            st.success(f"Your selected Truck ID '{truck_id}' has been saved!")
+        
+        
+    st.subheader('2. Specify the number of hours your truck is working for')
+
+    no_of_hours = st.text_input("Enter the number of hours (1-23): ")
+    if no_of_hours.isnumeric():
+        hours = int(no_of_hours)
+        if 1 <= hours <= 23:
+            st.success(f"Your input of {hours} hours has been saved!")
+        else:
+            st.warning("Please enter a number between 1 and 23.")
+    elif no_of_hours.strip() != "":
+        st.warning("Please enter a valid numeric value.")
+  
+
+    st.subheader('3. Specify the date your truck is working on')
+    def is_valid_date_format(date_string):
+        try:
+        # Try to parse the input string as a date
+            year, month, day = map(int, date_string.split('-'))
+            if 1 <= month <= 12 and 1 <= day <= 31 and year>2000:
+                return True
+        except ValueError:
+            pass
+        return False
+
+    date = st.text_input("Enter the date (YYYY-M-D)", key="date_input")
+    
+    
+    # Validate the user input and display a success message
+    if is_valid_date_format(date):
+        st.success(f"Your input date '{date}' has been saved !")
+        date_d=pd.to_datetime(date)
+        datetime_object = datetime.datetime.strptime(date, '%Y-%m-%d')
+        
+        
+        input_df = pd.DataFrame({'TRUCK_ID': [truck_id],'date': [date]})
+    
+        #seperate date into month, dow, day, public_holiday
+        input_df['date'] = date_d
+        for_weadf = date_d.date()
+        input_df['date'] = pd.to_datetime(input_df['date'])
+        input_df['MONTH'] = input_df['date'].dt.month
+        input_df['DOW'] = input_df['date'].dt.weekday
+        input_df['DAY'] = input_df['date'].dt.day
+        input_df['WOM'] = (input_df['DAY'] - 1) // 7 + 1
+        input_df['YEAR'] = input_df['date'].dt.year
+        
+        
+        
+        # Iterate over the public holidays and create the 'public_holiday' column
+        input_df['PUBLIC_HOLIDAY'] = 0
+        for holiday in public_holidays:
+            month_mask = input_df['date'].dt.month == holiday['Month']
+            day_mask = input_df['date'].dt.day == holiday['Day']
+            dow_mask = input_df['date'].dt.dayofweek == int(holiday['DOW']) if holiday['DOW'] is not None else True
+            wom_mask = (input_df['date'].dt.day - 1) // 7 + 1 == holiday['WOM'] if holiday['WOM'] is not None else True
+            mask = month_mask & day_mask & dow_mask & wom_mask
+            input_df.loc[mask, 'PUBLIC_HOLIDAY'] = 1
+    
+        
+    elif date.strip() != "":
+        st.warning("Please enter a valid date in the format 'YYYY-M-D'.")
+    st.subheader('4. Optimal shift timing will be recommended to you based on the forecasted total average revenue across all locations')
+    try:
+        query = 'SELECT * FROM "weadf_trend" WHERE DATE = \'{}\''.format(for_weadf)
+
+        session.use_schema("ANALYTICS")
+        weadf=session.sql(query).toPandas()
+        weadf['LOCATION_ID']=weadf['LOCATION_ID'].astype('str')
+        weadf['WEATHERCODE']=weadf['WEATHERCODE'].astype('int64')
+        weadf['H']=weadf['H'].astype('int64')
+    except:pass
+
+
+    def find_optimal_hour(truck_id,date,no_of_hours):
+        #works
+        average_revenue_for_hour=pd.DataFrame(columns=['TRUCK_ID','HOUR','AVERAGE REVENUE PER HOUR'])   
+        #TODO for loop testing - change hour, sum1,sum2,weathercode
+        for x in range(8,24):
+            # truck_df=load_truck_data()
+
+            # truck_df_temp=truck_df[truck_df['TRUCK_ID']==truck_id]
+            # truck_df_temp=truck_df_temp.reset_index()
+            # truck_df_temp=truck_df_temp.drop(['index'],axis=1)
+    
+    
+            # city = truck_df_temp['PRIMARY_CITY'].iloc[0]
+        
+            #query = "SELECT * FROM LOCATION WHERE CITY = '{}'".format(city)
+            #session.use_schema('RAW_POS')
+            #query = "SELECT * FROM LOCATION"
+            #location_df=session.sql(query).toPandas()
+            #location_df.head()
+            #location_df.to_csv('location_df.csv',index=False)
+            
+
+            # location_df=pd.read_csv('location_df.csv')
+            # location_df = location_df[location_df['CITY']==city]
+            # city_locations = location_df.merge(df_unique_locations_lat_long, left_on='LOCATION_ID', right_on='Location ID', how='inner')
+            # city_locations = city_locations[['LOCATION_ID','Latitude','Longitude']]
+            # city_locations.rename(columns={"Latitude": "LAT"},inplace=True)
+            # city_locations.rename(columns={"Longitude": "LONG"},inplace=True)
+        
+            # loc_checker = city_locations.copy()
+            # loc_checker['DATE'] = date
+            
+            # loc_checker['DATE']=pd.to_datetime(loc_checker['DATE'],format='%Y-%m-%d')
+            # loc_checker['DATE']=loc_checker['DATE'].astype('str')
+           
+           
+                 
+            input_df['date']=input_df['date'].astype('str')
+            input_df['HOUR']=x
+            
+            new_df = pd.merge(input_df, weadf,  how='left', left_on=['date','HOUR'], right_on = ['DATE','H']).drop_duplicates() #works
+            
+            #sales_pred=session.sql("select * from ANALYTICS.SALES_PREDICTION").to_pandas() #this is the problem.
+        
+            #sales_pred.to_csv('sales_pred.csv')
+            # sales_pred=load_sales_pred()
+    
+            # X_final_scaled=load_x_final_scaled()
+            # X_final_scaled=X_final_scaled.merge(sales_pred["l_w5i8_DATE"].astype(str).str[:4].rename('YEAR'), left_index=True, right_index=True)
+            filtered_df = X_final_scaled[(X_final_scaled['TRUCK_ID'] == truck_id) & (X_final_scaled['YEAR'].astype(int) == input_df['YEAR'][0].astype(int))]
+            filtered_df = filtered_df[['TRUCK_ID', 'MENU_TYPE_GYROS_ENCODED', 'MENU_TYPE_CREPES_ENCODED', 
+                                    'MENU_TYPE_BBQ_ENCODED', 'MENU_TYPE_SANDWICHES_ENCODED', 'MENU_TYPE_Mac & Cheese_encoded', 'MENU_TYPE_POUTINE_ENCODED', 
+                                    'MENU_TYPE_ETHIOPIAN_ENCODED', 'MENU_TYPE_TACOS_ENCODED', 'MENU_TYPE_Ice Cream_encoded', 'MENU_TYPE_Hot Dogs_encoded', 'MENU_TYPE_CHINESE_ENCODED', 
+                                    'MENU_TYPE_Grilled Cheese_encoded', 'MENU_TYPE_VEGETARIAN_ENCODED', 'MENU_TYPE_INDIAN_ENCODED', 'MENU_TYPE_RAMEN_ENCODED', 'CITY_SEATTLE_ENCODED', 
+                                    'CITY_DENVER_ENCODED', 'CITY_San Mateo_encoded', 'CITY_New York City_encoded', 'CITY_BOSTON_ENCODED', 'REGION_NY_ENCODED', 'REGION_MA_ENCODED', 
+                                    'REGION_CO_ENCODED', 'REGION_WA_ENCODED', 'REGION_CA_ENCODED']]
+            merge_df = new_df.merge(filtered_df, left_on='TRUCK_ID', right_on='TRUCK_ID', how='inner').drop_duplicates()
+            #works
+        
+            filtered_df = X_final_scaled[(X_final_scaled['TRUCK_ID'] == truck_id) & (X_final_scaled['HOUR'] == x) & (X_final_scaled['YEAR'].astype(int) == input_df['YEAR'][0].astype(int))]
+        
+            sum_prev_year=filtered_df['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].mean()
+            sum_day_of_week=filtered_df['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].mean()
+            
+            filtered_df = X_final_scaled[(X_final_scaled['TRUCK_ID'] == truck_id) & 
+                                        (X_final_scaled['HOUR'] == x) &
+                                        (X_final_scaled['YEAR'].astype(int) == input_df['YEAR'][0].astype(int))]
+        
+            filtered_df = filtered_df[['TRUCK_ID', 'MONTH','DAY', 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE', 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE', 'YEAR']]
+            filtered_df['YEAR'] = filtered_df['YEAR'].astype(int)
+            
+        
+            #Perform the left merge based on truck_id and date
+            merged_df = pd.merge(merge_df, filtered_df, on=['TRUCK_ID', 'YEAR', 'MONTH', 'DAY'], how='left').drop_duplicates()
+            merged_df = merged_df.sort_values(by=['TRUCK_ID', 'YEAR', 'MONTH', 'DAY'])
+            
+        
+        
+            filtered_df['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'] = filtered_df['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].astype(float)
+            filtered_df['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'] = filtered_df['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].astype(float)
+        
+            merged_df = merged_df.fillna({ 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE':(sum_prev_year)})
+            merged_df = merged_df.fillna({ 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE':(sum_day_of_week)})
+            
+        
+            # Reset the index of the merged DataFrame
+            merged_df = merged_df.reset_index(drop=True)
+            merged_df=merged_df.dropna(subset=['LOCATION_ID'])
+            merged_df['LOCATION_ID'] = merged_df['LOCATION_ID'].astype(int)
+            #works
+            initial_df_position = merged_df[['TRUCK_ID', 'MONTH', 'HOUR', 'DOW', 'DAY', 'PUBLIC_HOLIDAY', 'LAT', 'LONG', 'LOCATION_ID', 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE', 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE', 'WEATHERCODE', 'MENU_TYPE_GYROS_ENCODED', 'MENU_TYPE_CREPES_ENCODED', 'MENU_TYPE_BBQ_ENCODED', 'MENU_TYPE_SANDWICHES_ENCODED', 'MENU_TYPE_Mac & Cheese_encoded', 'MENU_TYPE_POUTINE_ENCODED', 'MENU_TYPE_ETHIOPIAN_ENCODED', 'MENU_TYPE_TACOS_ENCODED', 'MENU_TYPE_Ice Cream_encoded', 'MENU_TYPE_Hot Dogs_encoded', 'MENU_TYPE_CHINESE_ENCODED', 'MENU_TYPE_Grilled Cheese_encoded', 'MENU_TYPE_VEGETARIAN_ENCODED', 'MENU_TYPE_INDIAN_ENCODED', 'MENU_TYPE_RAMEN_ENCODED', 'CITY_SEATTLE_ENCODED', 'CITY_DENVER_ENCODED', 'CITY_San Mateo_encoded', 'CITY_New York City_encoded', 'CITY_BOSTON_ENCODED', 'REGION_NY_ENCODED', 'REGION_MA_ENCODED', 'REGION_CO_ENCODED', 'REGION_WA_ENCODED', 'REGION_CA_ENCODED']]
+            initial_df_position.head()
+        
+            predictions = model.predict(initial_df_position)
+            
+            initial_df_position['Predicted'] = predictions
+           
+        
+            
+            data_for_avg_revenue=[truck_id,x,initial_df_position['Predicted'].mean()]
+            average_revenue_for_hour.loc[len(average_revenue_for_hour)]=data_for_avg_revenue
+            
+       
+        
+        
+        #Initialize variables
+        average_revenue_for_hour['rolling_average']=0
+        working_hours=hours-1
+        max_revenue = 0
+        optimal_hours = []
+        for i in range(len(average_revenue_for_hour) - working_hours):
+            
+            total_revenue=0
+            # Calculate the total revenue for the current 5-hour window
+            total_revenue = average_revenue_for_hour.loc[i:i+working_hours, 'AVERAGE REVENUE PER HOUR'].sum()
+            average_revenue_for_hour['rolling_average'].loc[i] = total_revenue
+            
+             # Check if the current total revenue is greater than the previous maximum
+            if total_revenue > max_revenue:
+                max_revenue = total_revenue
+                optimal_hours = average_revenue_for_hour.loc[i:i+working_hours, 'HOUR'].tolist()
+        values=[optimal_hours,max_revenue]
 
 
 
-with tabs[4]: #minh
+    
+        return values
+    if st.button("Run Algorithm"):
+        # Display a loading message while the algorithm is running
+        with st.spinner("Running the algorithm..."):
+            output = find_optimal_hour(truck_id,date,no_of_hours)
+    
+        # Show the output once the algorithm is done
+        st.success("Algorithm completed!")
+        st.write("Output:")
+        st.text("Optimal Hours: "+str(output[0]))
+        st.text("Maximum Revenue: "+str(output[1]))
+
+
+    
+
+with tabs[3]: #Aryton
+    print('Aryton')
+
+
+   
+with tabs[1]: #Vibu
+    
+    
+    @st.cache_data
+    def get_data() -> pd.DataFrame:
+        df=pd.read_csv('truck_manager_merged_df.csv')
+        df['Date'] = pd.to_datetime(df['Date'])
+        df["Date"]=pd.to_datetime(df['Date'], format='%d/%m/%Y')
+        df.sort_values(by='Date', inplace=True)  
+        df['predicted_earning'] = df['predicted_earning'].apply(lambda x: [int(float(i)) for i in x.strip('[]').split(',')])
+        df['total_sales']=df['predicted_earning'].apply(lambda x: sum(x))
+        percentile_25 = df['total_sales'].quantile(0.25)
+        percentile_50 = df['total_sales'].quantile(0.5)
+        
+        
+
+        # Define the function to map earnings to letter grades
+        def assign_letter_grade(earnings):
+      
+            if earnings > percentile_50:
+                return 'A'
+            elif earnings > percentile_25:
+                return 'B'
+            else:
+                return 'C'
+
+        # Apply the mapping function to create a new column with letter grades
+        df['Letter_Grade'] = df['total_sales'].apply(assign_letter_grade)
+        df['start_time'] = df['start_time'].apply(lambda x: [int(float(i)) for i in x.strip('[]').split(',')])
+                
+        
+        return  df
+
+    predicted_route = get_data()
+    
+    @st.cache_data
+    def get_usual_route() -> pd.DataFrame:
+        df=pd.read_csv("truck_usual_routine.csv")
+        df['sales'] = df['predicted_earning'].apply(lambda x: [int(float(i)) for i in x.strip('[]').split(',')])
+        df['total_sales']=df['sales'].apply(lambda x: sum(x))
+        df['start_time'] = df['start_time'].apply(lambda x: [int(float(i)) for i in x.strip('[]').split(',')])
+        return df 
+    
+    @st.cache_data
+    def get_lat_long() -> pd.DataFrame:
+        df=pd.read_csv("x_final_scaled.csv")
+        df.drop_duplicates(subset="LOCATION_ID")
+        
+        return df[["LOCATION_ID","LAT","LONG"]]           
+        
+    
+    usual_route =get_usual_route()
+    location=get_lat_long()
+    
+    def calculate_kpis(data):
+        total_sales = data["total_sales"].sum().round(2)
+        total_working_hours = data["working_hour"].sum()
+        total_distance = data["total_distance_traveled"].sum().round(2)
+        distance_per_km =  (total_sales/total_distance).round(2)
+        return total_sales, total_working_hours, total_distance, distance_per_km
+    
+    query=st.experimental_get_query_params()
+    truck_ids=list(pd.unique(predicted_route["Truck_ID"]))
+    try:
+        truck_id=query["truck_id"][0]
+        print(truck_id)
+        ind=truck_ids.index(int(truck_id))
+        truck_filter = st.selectbox("Select the Truck", truck_ids,index=ind)
+        
+    except:
+    
+    
+   
+        truck_filter = st.selectbox("Select the Truck", pd.unique(predicted_route["Truck_ID"]))
+   
+    predicted_route= predicted_route[predicted_route["TRUCK_ID"] ==  truck_filter]
+    usual_route=usual_route[usual_route["Truck_ID"] ==  truck_filter]
+    # dashboard title
+    
+
+    # top-level filters
+   
+    predicted_kpis = calculate_kpis(predicted_route)
+    usual_kpis = calculate_kpis(usual_route)
+    
+    ##change in sales
+    st.subheader("Predicted Route")
+    with st.container():
+        kpi1,kpi2=st.columns(2)
+        kpi1.metric("Predicted increas from usual sales",str((((predicted_kpis[0]-usual_kpis[0])/usual_kpis[0])*100).round(2))+"%")
+        kpi2.metric("Predicted performace(compare to other truck)",predicted_route['Letter_Grade'].values[0])
+
+# Predicted Route KPIs
+    st.subheader("Predicted Route")
+    with st.container():
+        kpi1, kpi2, kpi3,kpi4,kpi5 = st.columns(5)
+        
+        kpi1.metric("Total Sales", predicted_kpis[0])
+        kpi2.metric("Total Working Hours", predicted_kpis[1])
+        kpi3.metric("Total Distance", predicted_kpis[2])
+        kpi4.metric("Dollar earned per km travelled", predicted_kpis[3])
+        kpi5.metric("color","beige")
+
+# Usual Route KPIs
+    st.subheader("Usual Route")
+    with st.container():
+        kpi1, kpi2, kpi3,kpi4,kpi5 = st.columns(5)
+        
+        kpi1.metric("Total Sales", usual_kpis[0])
+        kpi2.metric("Total Working Hours", usual_kpis[1])
+        kpi3.metric("Total Distance", usual_kpis[2])
+        kpi4.metric("Dollar earned per km travelled", usual_kpis[3])
+        kpi5.metric("color","red")
+    
+    data=predicted_route[["predicted_earning","location_visited"]]
+    data=data.rename(columns={"predicted_earning":"sales"})
+    data=pd.concat([data,usual_route[["sales","location_visited"]]],ignore_index=True)
+    data["color"]=["black","purple"]
+    data["color_marker"]=["beige","light green"]
+    data=data.rename(columns={"location_visited":"location"})
+    
+        
+    def get_lat_long(location_list):
+        lat_list = []
+        long_list = []
+        for loc in location_list:
+            if loc in list(location["LOCATION_ID"]):
+                
+                
+                lat, long = location[location['LOCATION_ID']==loc]["LAT"].values[0],location[location['LOCATION_ID']==loc]["LONG"].values[0]
+                lat_list.append(lat)
+                long_list.append(long)
+            else:
+                lat_list.append(None)
+                long_list.append(None)
+        return lat_list, long_list
+     
+    #ors client
+    ors_client = ors.Client(key='5b3ce3597851110001cf624817eb9bc1474c4917b9dda7114d579034')
+    
+    # # Define a function to get the route between two points using ORS
+    def get_route(start_point, end_point):
+            radius = 500  # 10 kilometers
+            profile = 'driving-car'
+            try:
+                    # Get the route between the start and end points
+                    route = ors_client.directions(
+                    coordinates=[start_point, end_point],
+                    profile=profile,
+                    format='geojson',
+                    radiuses=[radius, radius]
+                    )
+                    return route
+    
+            except ors.exceptions.ApiError as e:
+                    print(e)
+                    return None
+                
+    def create_folium_map(data):
+        
+        location_list=data["location"].iloc[0].strip('[]').split(',')
+        loc_list=[]
+        for i in location_list:
+            loc_list.append(int(i))
+                
+        lat_list,long_list=get_lat_long(loc_list)
+        
+        m = folium.Map(location=[lat_list[0], long_list[0]], zoom_start=10)
+        
+        for index, row in data.iterrows():
+            
+    # Create a map centered on the mean latitude and longitude of the data
+
+            location_list=row["location"].strip('[]').split(',')
+            loc_list=[]
+            for i in location_list:
+                loc_list.append(int(i))
+                
+            lat_list,long_list=get_lat_long(loc_list)
+            
+        
+           
+            
+            for location in location_list:
+                lat=lat_list[location_list.index(location)]
+                long=long_list[location_list.index(location)]
+                folium.Marker([lat, long],popup=('Truck Location {} \n '.format(location)),
+                                        icon=folium.Icon(color=row["color_marker"], icon_color="white", prefix='fa', icon='truck')
+                                        ).add_to(m)
+                
+            for i in range(len(lat_list) - 1):
+                start_point = [long_list[i], lat_list[i]]  # Corrected order: [long, lat]
+                end_point = [long_list[i + 1], lat_list[i + 1]]  # Corrected order: [long, lat]
+
+                # Check if the start point and end point are the same
+                if start_point != end_point:
+                    # Get the route between two consecutive points
+                    route = get_route(start_point, end_point)
+
+                        # Check if the route is found
+                    if route is not None:
+
+                        # print(route_coords)
+                        waypoints = list(dict.fromkeys(reduce(operator.concat, list(map(lambda step: step['way_points'], route['features'][0]['properties']['segments'][0]['steps'])))))
+
+                        folium.PolyLine(locations=[list(reversed(coord)) for coord in route['features'][0]['geometry']['coordinates']], color=row["color"]).add_to(m)
+
+                        # folium.PolyLine(locations=[list(reversed(route['features'][0]['geometry']['coordinates'][index])) for index in waypoints], color="red").add_to(m)
+        
+
+
+
+        st_folium(m, width=1500)
+    
+    
+    
+    
+    if 'truck_fiter' not in st.session_state:
+        st.session_state.truck_fiter = None
+            
+    with st.form("RunMapForm2"):
+        st.form_submit_button("Run Map")
+    
+        if truck_filter:
+            
+                if truck_filter != st.session_state.truck_fiter:
+                            # Save the current selected truck IDs to session state
+                    selected_truck_ids_str = truck_filter
+                    st.success(f"Your selected Truck ID {selected_truck_ids_str} have been saved!")
+                    st.session_state.truck_fiter = truck_filter
+                            # Create the map and display truck routes
+                    create_folium_map(data)
+                else:
+                            
+                    st.info("Selected truck IDs have not changed. The map has not been changed.")
+                    create_folium_map(data)
+        else:
+                st.info("No truck IDs have been selected.")
+    
+        map_placeholder = st.empty()
+
+        
+        
+        
+query = st.experimental_get_query_params()
+
+try:
+    print(query)
+    print(int(query["tab"][0]))
+    index_tab =int(query["tab"][0])
+    print(index_tab)
+    ## Click on that tab
+    js = f"""
+    <script>
+        var tab = window.parent.document.getElementById('tabs-bui6-tab-{index_tab}');
+        tab.click();
+    </script>
+    """
+
+    st.components.v1.html(js)
+
+except :
+    print("WRONG")
+    ## Do nothing if the query parameter does not correspond to any of the tabs
+    pass
+        
+        
+        
+        
+        
+        
+        
+#         #vibu
+        
+#     #     df= pd.read_csv('truck_location_df.csv')
+#     #     df['Date'] = pd.to_datetime(df['Date'])
+#     #     df["Date"]=pd.to_datetime(df['Date'], format='%d/%m/%Y')
+
+#     # # Sort the DataFrame by Date
+#     #     df.sort_values(by='Date', inplace=True)
+
+
+
+#     # # Dashboard title
+#     #     st.title("Food Truck Competitor Analysis Dashboard")
+
+#     # # Overview Section
+#     #     st.header("Overview")
+#     #     df['predicted_earning'] = df['predicted_earning'].apply(lambda x: [int(float(i)) for i in x.strip('[]').split(',')])
+#     #     total_sales=df['predicted_earning'].apply(lambda x: sum(x)).sum()
+
+#     #     average_predicted_earnings = df['predicted_earning'].apply(lambda x: sum(x) / len(x)).mean()
+#     #     total_locations_visited = df['Num_of_locs'].sum()
+
+#     #     st.write(f"Total Sales (Last 2 weeks): ${round(total_sales, 2)}")
+#     #     st.write(f"Average Predicted Earnings: ${round(average_predicted_earnings, 2)}")
+#     #     st.write(f"Total Locations Visited: {total_locations_visited}")
+
+#     # # # Sales Performance Section
+#     # #     st.header("Sales Performance")
+#     # #     fig_sales = px.bar(df, x='Date', y='predicted_earning', title='Predicted Earnings Over Time')
+#     # #     st.plotly_chart(fig_sales)
+
+#     # # Efficiency Metrics Section
+#     #     st.header("Efficiency Metrics")
+#     #     fig_hours = px.pie(df, names='Truck_ID', values='working_hour', title='Distribution of Working Hours')
+#     #     fig_shifts = px.bar(df, x='Truck_ID', y='Num_of_locs', title='Number of Locations Visited')
+#     #     st.plotly_chart(fig_hours)
+#     #     st.plotly_chart(fig_shifts)
+
+
+#     # # Prioritization Analysis Section
+#     #     st.header("Prioritization Analysis")
+#     #     df['Priority_Order'] = df['Truck_ID'].rank(method='first')
+#     #     fig_priority = px.bar(df, x='Truck_ID', y='predicted_earning', color='Priority_Order',
+#     #                       labels={'Truck_ID': 'Truck ID', 'predicted_earning': 'Predicted Earnings'},
+#     #                       title='Truck Prioritization Based on Sales Performance')
+#     #     st.plotly_chart(fig_priority)
+
+with tabs[4]: #Tran Huy Minh S10223485H Tab Revenue Forecasting & Model Performance
     import calendar
     def get_dates(year, month):
     
@@ -1816,7 +2368,7 @@ with tabs[4]: #minh
 
                 if selected_model == 'Old Asg2 Model':
                     try:
-                        model_per = model
+                        model_per = old_model
                     except Exception as e:
                             print(f"An error occurred while loading the model from the file: {e}")
                     # Winsorize the target and some features to reduce the impact of outliers
@@ -1899,558 +2451,6 @@ with tabs[4]: #minh
             main()
         except Exception as e:
             print(f"An error occurred with the streamlit web app: {e}")
-        
-
-with tabs[2]: #javier
-    X_final_scaled=load_x_final_scaled()
-    sales_pred=load_sales_pred()
-    X_final_scaled=X_final_scaled.merge(sales_pred["l_w5i8_DATE"].astype(str).str[:4].rename('YEAR'), left_index=True, right_index=True)
-    st.header('Optimal Shift Timing Recommendation')
-    st.subheader('Want to find out the optimal working hours for your truck?')
-    st.subheader('1. Specify your truck details')
-    truck_ids = [27,43,28,44,46,47]
-    truck_id = st.selectbox("Select your Truck ID", truck_ids)
-    if truck_id:
-            st.success(f"Your selected Truck ID '{truck_id}' has been saved!")
-        
-        
-    st.subheader('2. Specify the number of hours your truck is working for')
-
-    no_of_hours = st.text_input("Enter the number of hours (1-23): ")
-    if no_of_hours.isnumeric():
-        hours = int(no_of_hours)
-        if 1 <= hours <= 23:
-            st.success(f"Your input of {hours} hours has been saved!")
-        else:
-            st.warning("Please enter a number between 1 and 23.")
-    elif no_of_hours.strip() != "":
-        st.warning("Please enter a valid numeric value.")
-  
-
-    st.subheader('3. Specify the date your truck is working on')
-    def is_valid_date_format(date_string):
-        try:
-        # Try to parse the input string as a date
-            year, month, day = map(int, date_string.split('-'))
-            if 1 <= month <= 12 and 1 <= day <= 31 and year>2000:
-                return True
-        except ValueError:
-            pass
-        return False
-
-    date = st.text_input("Enter the date (YYYY-M-D)", key="date_input")
-    
-    
-    # Validate the user input and display a success message
-    if is_valid_date_format(date):
-        st.success(f"Your input date '{date}' has been saved !")
-        date_d=pd.to_datetime(date)
-        datetime_object = datetime.datetime.strptime(date, '%Y-%m-%d')
-        
-        
-        input_df = pd.DataFrame({'TRUCK_ID': [truck_id],'date': [date]})
-    
-        #seperate date into month, dow, day, public_holiday
-        input_df['date'] = date_d
-        for_weadf = date_d.date()
-        input_df['date'] = pd.to_datetime(input_df['date'])
-        input_df['MONTH'] = input_df['date'].dt.month
-        input_df['DOW'] = input_df['date'].dt.weekday
-        input_df['DAY'] = input_df['date'].dt.day
-        input_df['WOM'] = (input_df['DAY'] - 1) // 7 + 1
-        input_df['YEAR'] = input_df['date'].dt.year
-        
-        
-        
-        # Iterate over the public holidays and create the 'public_holiday' column
-        input_df['PUBLIC_HOLIDAY'] = 0
-        for holiday in public_holidays:
-            month_mask = input_df['date'].dt.month == holiday['Month']
-            day_mask = input_df['date'].dt.day == holiday['Day']
-            dow_mask = input_df['date'].dt.dayofweek == int(holiday['DOW']) if holiday['DOW'] is not None else True
-            wom_mask = (input_df['date'].dt.day - 1) // 7 + 1 == holiday['WOM'] if holiday['WOM'] is not None else True
-            mask = month_mask & day_mask & dow_mask & wom_mask
-            input_df.loc[mask, 'PUBLIC_HOLIDAY'] = 1
-    
-        
-    elif date.strip() != "":
-        st.warning("Please enter a valid date in the format 'YYYY-M-D'.")
-    st.subheader('4. Optimal shift timing will be recommended to you based on the forecasted total average revenue across all locations')
-    try:
-        query = 'SELECT * FROM "weadf_trend" WHERE DATE = \'{}\''.format(for_weadf)
-
-        session.use_schema("ANALYTICS")
-        weadf=session.sql(query).toPandas()
-        weadf['LOCATION_ID']=weadf['LOCATION_ID'].astype('str')
-        weadf['WEATHERCODE']=weadf['WEATHERCODE'].astype('int64')
-        weadf['H']=weadf['H'].astype('int64')
-    except:pass
-
-
-    def find_optimal_hour(truck_id,date,no_of_hours):
-        #works
-        average_revenue_for_hour=pd.DataFrame(columns=['TRUCK_ID','HOUR','AVERAGE REVENUE PER HOUR'])   
-        #TODO for loop testing - change hour, sum1,sum2,weathercode
-        for x in range(8,24):
-            # truck_df=load_truck_data()
-
-            # truck_df_temp=truck_df[truck_df['TRUCK_ID']==truck_id]
-            # truck_df_temp=truck_df_temp.reset_index()
-            # truck_df_temp=truck_df_temp.drop(['index'],axis=1)
-    
-    
-            # city = truck_df_temp['PRIMARY_CITY'].iloc[0]
-        
-            #query = "SELECT * FROM LOCATION WHERE CITY = '{}'".format(city)
-            #session.use_schema('RAW_POS')
-            #query = "SELECT * FROM LOCATION"
-            #location_df=session.sql(query).toPandas()
-            #location_df.head()
-            #location_df.to_csv('location_df.csv',index=False)
-            
-
-            # location_df=pd.read_csv('location_df.csv')
-            # location_df = location_df[location_df['CITY']==city]
-            # city_locations = location_df.merge(df_unique_locations_lat_long, left_on='LOCATION_ID', right_on='Location ID', how='inner')
-            # city_locations = city_locations[['LOCATION_ID','Latitude','Longitude']]
-            # city_locations.rename(columns={"Latitude": "LAT"},inplace=True)
-            # city_locations.rename(columns={"Longitude": "LONG"},inplace=True)
-        
-            # loc_checker = city_locations.copy()
-            # loc_checker['DATE'] = date
-            
-            # loc_checker['DATE']=pd.to_datetime(loc_checker['DATE'],format='%Y-%m-%d')
-            # loc_checker['DATE']=loc_checker['DATE'].astype('str')
-           
-           
-                 
-            input_df['date']=input_df['date'].astype('str')
-            input_df['HOUR']=x
-            
-            new_df = pd.merge(input_df, weadf,  how='left', left_on=['date','HOUR'], right_on = ['DATE','H']).drop_duplicates() #works
-            
-            #sales_pred=session.sql("select * from ANALYTICS.SALES_PREDICTION").to_pandas() #this is the problem.
-        
-            #sales_pred.to_csv('sales_pred.csv')
-            # sales_pred=load_sales_pred()
-    
-            # X_final_scaled=load_x_final_scaled()
-            # X_final_scaled=X_final_scaled.merge(sales_pred["l_w5i8_DATE"].astype(str).str[:4].rename('YEAR'), left_index=True, right_index=True)
-            filtered_df = X_final_scaled[(X_final_scaled['TRUCK_ID'] == truck_id) & (X_final_scaled['YEAR'].astype(int) == input_df['YEAR'][0].astype(int))]
-            filtered_df = filtered_df[['TRUCK_ID', 'MENU_TYPE_GYROS_ENCODED', 'MENU_TYPE_CREPES_ENCODED', 
-                                    'MENU_TYPE_BBQ_ENCODED', 'MENU_TYPE_SANDWICHES_ENCODED', 'MENU_TYPE_Mac & Cheese_encoded', 'MENU_TYPE_POUTINE_ENCODED', 
-                                    'MENU_TYPE_ETHIOPIAN_ENCODED', 'MENU_TYPE_TACOS_ENCODED', 'MENU_TYPE_Ice Cream_encoded', 'MENU_TYPE_Hot Dogs_encoded', 'MENU_TYPE_CHINESE_ENCODED', 
-                                    'MENU_TYPE_Grilled Cheese_encoded', 'MENU_TYPE_VEGETARIAN_ENCODED', 'MENU_TYPE_INDIAN_ENCODED', 'MENU_TYPE_RAMEN_ENCODED', 'CITY_SEATTLE_ENCODED', 
-                                    'CITY_DENVER_ENCODED', 'CITY_San Mateo_encoded', 'CITY_New York City_encoded', 'CITY_BOSTON_ENCODED', 'REGION_NY_ENCODED', 'REGION_MA_ENCODED', 
-                                    'REGION_CO_ENCODED', 'REGION_WA_ENCODED', 'REGION_CA_ENCODED']]
-            merge_df = new_df.merge(filtered_df, left_on='TRUCK_ID', right_on='TRUCK_ID', how='inner').drop_duplicates()
-            #works
-        
-            filtered_df = X_final_scaled[(X_final_scaled['TRUCK_ID'] == truck_id) & (X_final_scaled['HOUR'] == x) & (X_final_scaled['YEAR'].astype(int) == input_df['YEAR'][0].astype(int))]
-        
-            sum_prev_year=filtered_df['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].mean()
-            sum_day_of_week=filtered_df['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].mean()
-            
-            filtered_df = X_final_scaled[(X_final_scaled['TRUCK_ID'] == truck_id) & 
-                                        (X_final_scaled['HOUR'] == x) &
-                                        (X_final_scaled['YEAR'].astype(int) == input_df['YEAR'][0].astype(int))]
-        
-            filtered_df = filtered_df[['TRUCK_ID', 'MONTH','DAY', 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE', 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE', 'YEAR']]
-            filtered_df['YEAR'] = filtered_df['YEAR'].astype(int)
-            
-        
-            #Perform the left merge based on truck_id and date
-            merged_df = pd.merge(merge_df, filtered_df, on=['TRUCK_ID', 'YEAR', 'MONTH', 'DAY'], how='left').drop_duplicates()
-            merged_df = merged_df.sort_values(by=['TRUCK_ID', 'YEAR', 'MONTH', 'DAY'])
-            
-        
-        
-            filtered_df['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'] = filtered_df['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].astype(float)
-            filtered_df['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'] = filtered_df['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].astype(float)
-        
-            merged_df = merged_df.fillna({ 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE':(sum_prev_year)})
-            merged_df = merged_df.fillna({ 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE':(sum_day_of_week)})
-            
-        
-            # Reset the index of the merged DataFrame
-            merged_df = merged_df.reset_index(drop=True)
-            merged_df=merged_df.dropna(subset=['LOCATION_ID'])
-            merged_df['LOCATION_ID'] = merged_df['LOCATION_ID'].astype(int)
-            #works
-            initial_df_position = merged_df[['TRUCK_ID', 'MONTH', 'HOUR', 'DOW', 'DAY', 'PUBLIC_HOLIDAY', 'LAT', 'LONG', 'LOCATION_ID', 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE', 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE', 'WEATHERCODE', 'MENU_TYPE_GYROS_ENCODED', 'MENU_TYPE_CREPES_ENCODED', 'MENU_TYPE_BBQ_ENCODED', 'MENU_TYPE_SANDWICHES_ENCODED', 'MENU_TYPE_Mac & Cheese_encoded', 'MENU_TYPE_POUTINE_ENCODED', 'MENU_TYPE_ETHIOPIAN_ENCODED', 'MENU_TYPE_TACOS_ENCODED', 'MENU_TYPE_Ice Cream_encoded', 'MENU_TYPE_Hot Dogs_encoded', 'MENU_TYPE_CHINESE_ENCODED', 'MENU_TYPE_Grilled Cheese_encoded', 'MENU_TYPE_VEGETARIAN_ENCODED', 'MENU_TYPE_INDIAN_ENCODED', 'MENU_TYPE_RAMEN_ENCODED', 'CITY_SEATTLE_ENCODED', 'CITY_DENVER_ENCODED', 'CITY_San Mateo_encoded', 'CITY_New York City_encoded', 'CITY_BOSTON_ENCODED', 'REGION_NY_ENCODED', 'REGION_MA_ENCODED', 'REGION_CO_ENCODED', 'REGION_WA_ENCODED', 'REGION_CA_ENCODED']]
-            initial_df_position.head()
-        
-            predictions = model.predict(initial_df_position)
-            
-            initial_df_position['Predicted'] = predictions
-           
-        
-            
-            data_for_avg_revenue=[truck_id,x,initial_df_position['Predicted'].mean()]
-            average_revenue_for_hour.loc[len(average_revenue_for_hour)]=data_for_avg_revenue
-            
-       
-        
-        
-        #Initialize variables
-        average_revenue_for_hour['rolling_average']=0
-        working_hours=hours-1
-        max_revenue = 0
-        optimal_hours = []
-        for i in range(len(average_revenue_for_hour) - working_hours):
-            
-            total_revenue=0
-            # Calculate the total revenue for the current 5-hour window
-            total_revenue = average_revenue_for_hour.loc[i:i+working_hours, 'AVERAGE REVENUE PER HOUR'].sum()
-            average_revenue_for_hour['rolling_average'].loc[i] = total_revenue
-            
-             # Check if the current total revenue is greater than the previous maximum
-            if total_revenue > max_revenue:
-                max_revenue = total_revenue
-                optimal_hours = average_revenue_for_hour.loc[i:i+working_hours, 'HOUR'].tolist()
-        values=[optimal_hours,max_revenue]
-
-
-
-    
-        return values
-    if st.button("Run Algorithm"):
-        # Display a loading message while the algorithm is running
-        with st.spinner("Running the algorithm..."):
-            output = find_optimal_hour(truck_id,date,no_of_hours)
-    
-        # Show the output once the algorithm is done
-        st.success("Algorithm completed!")
-        st.write("Output:")
-        st.text("Optimal Hours: "+str(output[0]))
-        st.text("Maximum Revenue: "+str(output[1]))
-
-
-    
-
-with tabs[3]: #Aryton
-    print('Aryton')
-
-
-   
-with tabs[1]: #Vibu
-    
-    
-    @st.cache_data
-    def get_data() -> pd.DataFrame:
-        df=pd.read_csv('truck_manager_merged_df.csv')
-        df['Date'] = pd.to_datetime(df['Date'])
-        df["Date"]=pd.to_datetime(df['Date'], format='%d/%m/%Y')
-        df.sort_values(by='Date', inplace=True)  
-        df['predicted_earning'] = df['predicted_earning'].apply(lambda x: [int(float(i)) for i in x.strip('[]').split(',')])
-        df['total_sales']=df['predicted_earning'].apply(lambda x: sum(x))
-        percentile_25 = df['total_sales'].quantile(0.25)
-        percentile_50 = df['total_sales'].quantile(0.5)
-        
-        
-
-        # Define the function to map earnings to letter grades
-        def assign_letter_grade(earnings):
-      
-            if earnings > percentile_50:
-                return 'A'
-            elif earnings > percentile_25:
-                return 'B'
-            else:
-                return 'C'
-
-        # Apply the mapping function to create a new column with letter grades
-        df['Letter_Grade'] = df['total_sales'].apply(assign_letter_grade)
-        df['start_time'] = df['start_time'].apply(lambda x: [int(float(i)) for i in x.strip('[]').split(',')])
-                
-        
-        return  df
-
-    predicted_route = get_data()
-    
-    @st.cache_data
-    def get_usual_route() -> pd.DataFrame:
-        df=pd.read_csv("truck_usual_routine.csv")
-        df['sales'] = df['predicted_earning'].apply(lambda x: [int(float(i)) for i in x.strip('[]').split(',')])
-        df['total_sales']=df['sales'].apply(lambda x: sum(x))
-        df['start_time'] = df['start_time'].apply(lambda x: [int(float(i)) for i in x.strip('[]').split(',')])
-        return df 
-    
-    @st.cache_data
-    def get_lat_long() -> pd.DataFrame:
-        df=pd.read_csv("x_final_scaled.csv")
-        df.drop_duplicates(subset="LOCATION_ID")
-        
-        return df[["LOCATION_ID","LAT","LONG"]]           
-        
-    
-    usual_route =get_usual_route()
-    location=get_lat_long()
-    
-    def calculate_kpis(data):
-        total_sales = data["total_sales"].sum().round(2)
-        total_working_hours = data["working_hour"].sum()
-        total_distance = data["total_distance_traveled"].sum().round(2)
-        distance_per_km =  (total_sales/total_distance).round(2)
-        return total_sales, total_working_hours, total_distance, distance_per_km
-    
-    query=st.experimental_get_query_params()
-    truck_ids=list(pd.unique(predicted_route["Truck_ID"]))
-    try:
-        truck_id=query["truck_id"][0]
-        print(truck_id)
-        ind=truck_ids.index(int(truck_id))
-        truck_filter = st.selectbox("Select the Truck", truck_ids,index=ind)
-        
-    except:
-    
-    
-   
-        truck_filter = st.selectbox("Select the Truck", pd.unique(predicted_route["Truck_ID"]))
-   
-    predicted_route= predicted_route[predicted_route["TRUCK_ID"] ==  truck_filter]
-    usual_route=usual_route[usual_route["Truck_ID"] ==  truck_filter]
-    # dashboard title
-    
-
-    # top-level filters
-   
-    predicted_kpis = calculate_kpis(predicted_route)
-    usual_kpis = calculate_kpis(usual_route)
-    
-    ##change in sales
-    st.subheader("Predicted Route")
-    with st.container():
-        kpi1,kpi2=st.columns(2)
-        kpi1.metric("Predicted increas from usual sales",str((((predicted_kpis[0]-usual_kpis[0])/usual_kpis[0])*100).round(2))+"%")
-        kpi2.metric("Predicted performace(compare to other truck)",predicted_route['Letter_Grade'].values[0])
-
-# Predicted Route KPIs
-    st.subheader("Predicted Route")
-    with st.container():
-        kpi1, kpi2, kpi3,kpi4,kpi5 = st.columns(5)
-        
-        kpi1.metric("Total Sales", predicted_kpis[0])
-        kpi2.metric("Total Working Hours", predicted_kpis[1])
-        kpi3.metric("Total Distance", predicted_kpis[2])
-        kpi4.metric("Dollar earned per km travelled", predicted_kpis[3])
-        kpi5.metric("color","beige")
-
-# Usual Route KPIs
-    st.subheader("Usual Route")
-    with st.container():
-        kpi1, kpi2, kpi3,kpi4,kpi5 = st.columns(5)
-        
-        kpi1.metric("Total Sales", usual_kpis[0])
-        kpi2.metric("Total Working Hours", usual_kpis[1])
-        kpi3.metric("Total Distance", usual_kpis[2])
-        kpi4.metric("Dollar earned per km travelled", usual_kpis[3])
-        kpi5.metric("color","red")
-    
-    data=predicted_route[["predicted_earning","location_visited"]]
-    data=data.rename(columns={"predicted_earning":"sales"})
-    data=pd.concat([data,usual_route[["sales","location_visited"]]],ignore_index=True)
-    data["color"]=["black","purple"]
-    data["color_marker"]=["beige","light green"]
-    data=data.rename(columns={"location_visited":"location"})
-    
-        
-    def get_lat_long(location_list):
-        lat_list = []
-        long_list = []
-        for loc in location_list:
-            if loc in list(location["LOCATION_ID"]):
-                
-                
-                lat, long = location[location['LOCATION_ID']==loc]["LAT"].values[0],location[location['LOCATION_ID']==loc]["LONG"].values[0]
-                lat_list.append(lat)
-                long_list.append(long)
-            else:
-                lat_list.append(None)
-                long_list.append(None)
-        return lat_list, long_list
-     
-    #ors client
-    ors_client = ors.Client(key='5b3ce3597851110001cf624817eb9bc1474c4917b9dda7114d579034')
-    
-    # # Define a function to get the route between two points using ORS
-    def get_route(start_point, end_point):
-            radius = 500  # 10 kilometers
-            profile = 'driving-car'
-            try:
-                    # Get the route between the start and end points
-                    route = ors_client.directions(
-                    coordinates=[start_point, end_point],
-                    profile=profile,
-                    format='geojson',
-                    radiuses=[radius, radius]
-                    )
-                    return route
-    
-            except ors.exceptions.ApiError as e:
-                    print(e)
-                    return None
-                
-    def create_folium_map(data):
-        
-        location_list=data["location"].iloc[0].strip('[]').split(',')
-        loc_list=[]
-        for i in location_list:
-            loc_list.append(int(i))
-                
-        lat_list,long_list=get_lat_long(loc_list)
-        
-        m = folium.Map(location=[lat_list[0], long_list[0]], zoom_start=10)
-        
-        for index, row in data.iterrows():
-            
-    # Create a map centered on the mean latitude and longitude of the data
-
-            location_list=row["location"].strip('[]').split(',')
-            loc_list=[]
-            for i in location_list:
-                loc_list.append(int(i))
-                
-            lat_list,long_list=get_lat_long(loc_list)
-            
-        
-           
-            
-            for location in location_list:
-                lat=lat_list[location_list.index(location)]
-                long=long_list[location_list.index(location)]
-                folium.Marker([lat, long],popup=('Truck Location {} \n '.format(location)),
-                                        icon=folium.Icon(color=row["color_marker"], icon_color="white", prefix='fa', icon='truck')
-                                        ).add_to(m)
-                
-            for i in range(len(lat_list) - 1):
-                start_point = [long_list[i], lat_list[i]]  # Corrected order: [long, lat]
-                end_point = [long_list[i + 1], lat_list[i + 1]]  # Corrected order: [long, lat]
-
-                # Check if the start point and end point are the same
-                if start_point != end_point:
-                    # Get the route between two consecutive points
-                    route = get_route(start_point, end_point)
-
-                        # Check if the route is found
-                    if route is not None:
-
-                        # print(route_coords)
-                        waypoints = list(dict.fromkeys(reduce(operator.concat, list(map(lambda step: step['way_points'], route['features'][0]['properties']['segments'][0]['steps'])))))
-
-                        folium.PolyLine(locations=[list(reversed(coord)) for coord in route['features'][0]['geometry']['coordinates']], color=row["color"]).add_to(m)
-
-                        # folium.PolyLine(locations=[list(reversed(route['features'][0]['geometry']['coordinates'][index])) for index in waypoints], color="red").add_to(m)
-        
-
-
-
-        st_folium(m, width=1500)
-    
-    
-    
-    
-    if 'truck_fiter' not in st.session_state:
-        st.session_state.truck_fiter = None
-            
-    with st.form("RunMapForm2"):
-        st.form_submit_button("Run Map")
-    
-        if truck_filter:
-            
-                if truck_filter != st.session_state.truck_fiter:
-                            # Save the current selected truck IDs to session state
-                    selected_truck_ids_str = truck_filter
-                    st.success(f"Your selected Truck ID {selected_truck_ids_str} have been saved!")
-                    st.session_state.truck_fiter = truck_filter
-                            # Create the map and display truck routes
-                    create_folium_map(data)
-                else:
-                            
-                    st.info("Selected truck IDs have not changed. The map has not been changed.")
-                    create_folium_map(data)
-        else:
-                st.info("No truck IDs have been selected.")
-    
-        map_placeholder = st.empty()
-
-        
-        
-        
-query = st.experimental_get_query_params()
-
-try:
-    print(query)
-    print(int(query["tab"][0]))
-    index_tab =int(query["tab"][0])
-    print(index_tab)
-    ## Click on that tab
-    js = f"""
-    <script>
-        var tab = window.parent.document.getElementById('tabs-bui6-tab-{index_tab}');
-        tab.click();
-    </script>
-    """
-
-    st.components.v1.html(js)
-
-except :
-    print("WRONG")
-    ## Do nothing if the query parameter does not correspond to any of the tabs
-    pass
-        
-        
-        
-        
-        
-        
-        
-#         #vibu
-        
-#     #     df= pd.read_csv('truck_location_df.csv')
-#     #     df['Date'] = pd.to_datetime(df['Date'])
-#     #     df["Date"]=pd.to_datetime(df['Date'], format='%d/%m/%Y')
-
-#     # # Sort the DataFrame by Date
-#     #     df.sort_values(by='Date', inplace=True)
-
-
-
-#     # # Dashboard title
-#     #     st.title("Food Truck Competitor Analysis Dashboard")
-
-#     # # Overview Section
-#     #     st.header("Overview")
-#     #     df['predicted_earning'] = df['predicted_earning'].apply(lambda x: [int(float(i)) for i in x.strip('[]').split(',')])
-#     #     total_sales=df['predicted_earning'].apply(lambda x: sum(x)).sum()
-
-#     #     average_predicted_earnings = df['predicted_earning'].apply(lambda x: sum(x) / len(x)).mean()
-#     #     total_locations_visited = df['Num_of_locs'].sum()
-
-#     #     st.write(f"Total Sales (Last 2 weeks): ${round(total_sales, 2)}")
-#     #     st.write(f"Average Predicted Earnings: ${round(average_predicted_earnings, 2)}")
-#     #     st.write(f"Total Locations Visited: {total_locations_visited}")
-
-#     # # # Sales Performance Section
-#     # #     st.header("Sales Performance")
-#     # #     fig_sales = px.bar(df, x='Date', y='predicted_earning', title='Predicted Earnings Over Time')
-#     # #     st.plotly_chart(fig_sales)
-
-#     # # Efficiency Metrics Section
-#     #     st.header("Efficiency Metrics")
-#     #     fig_hours = px.pie(df, names='Truck_ID', values='working_hour', title='Distribution of Working Hours')
-#     #     fig_shifts = px.bar(df, x='Truck_ID', y='Num_of_locs', title='Number of Locations Visited')
-#     #     st.plotly_chart(fig_hours)
-#     #     st.plotly_chart(fig_shifts)
-
-
-#     # # Prioritization Analysis Section
-#     #     st.header("Prioritization Analysis")
-#     #     df['Priority_Order'] = df['Truck_ID'].rank(method='first')
-#     #     fig_priority = px.bar(df, x='Truck_ID', y='predicted_earning', color='Priority_Order',
-#     #                       labels={'Truck_ID': 'Truck ID', 'predicted_earning': 'Predicted Earnings'},
-#     #                       title='Truck Prioritization Based on Sales Performance')
-#     #     st.plotly_chart(fig_priority)
 
     
         
