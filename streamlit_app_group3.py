@@ -62,7 +62,7 @@ def load_sales_pred():
 def load_x_final_scaled():
     df=pd.read_csv('x_final_scaled.csv')
     return df
-list_of_tabs = ["Routing Map", "Current vs Usual Route", "Optimal Shift Timing Recommendation", "tab4", "Revenue Forecasting & Model Performance"]
+list_of_tabs = ["Routing Map", "Current vs Usual Route", "Optimal Shift Timing Recommendation", "Revenue By Location & Time", "Revenue Forecasting & Model Performance"]
 tabs = st.tabs(list_of_tabs)
 
 #Code to get the updated model from asg2
