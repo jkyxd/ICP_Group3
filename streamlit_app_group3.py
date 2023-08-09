@@ -898,8 +898,8 @@ with tabs[0]: #Nathan
         st.session_state.prev_selected_truck_ids = []
         
     # Add a "Run Map" button
-    with st.form("RunMapForm"):
-            if st.form_submit_button("Run Map"):
+    with ("RunMapForm"):
+            if _submit_button("Run Map"):
     
                 if selected_truck_ids:
                         if selected_truck_ids != st.session_state.prev_selected_truck_ids:
@@ -1419,8 +1419,8 @@ with tabs[3]: #Aryton
     df_selected_loc =  df_loc[df_loc['TRUCK_ID'].isin(truck_id)]
     selected_loc_list = df_selected_loc['LOCATION_ID'].unique().tolist()
     
-    with st.form("RunMapForm7"):
-        if st.form_submit_button("Run Map"):
+    with ("RunMapForm7"):
+        if _submit_button("Run Map"):
     
             if truck_id:
                     if truck_id != st.session_state.prev_selected_truck_ids:
@@ -1683,8 +1683,8 @@ with tabs[1]: #Vibu
             
     with st.form("RunMapForm2"):
         
-    if st.form_submit_button("Run Map"):
-        if truck_filter:
+        if st.form_submit_button("Run Map"):
+            if truck_filter:
             
                 if truck_filter != st.session_state.truck_fiter:
                             # Save the current selected truck IDs to session state
@@ -1697,7 +1697,7 @@ with tabs[1]: #Vibu
                             
                     st.info("Selected truck IDs have not changed. The map has not been changed.")
                     create_folium_map(data)
-        else:
+            else:
                 st.info("No truck IDs have been selected.")
     
         map_placeholder = st.empty()
