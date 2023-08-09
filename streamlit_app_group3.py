@@ -69,7 +69,7 @@ for location_id in unique_location_ids:
                          ignore_index=True)
 import plotly.express as px
 st.title('SpeedyBytes 🚚')
-st.image('speedybytes_icon2.jpg',  width=600)
+# st.image('speedybytes_icon2.jpg',  width=600)
 
 # query = 'SELECT * FROM "weadf_trend"'
 
@@ -1921,7 +1921,7 @@ try:
     ## Click on that tab
     js = f"""
     <script>
-        var tab = window.parent.document.getElementById('tabs-bui3-tab-{index_tab}');
+        var tab = window.parent.document.getElementById('tabs-bui6-tab-{index_tab}');
         tab.click();
     </script>
     """
