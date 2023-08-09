@@ -1508,14 +1508,15 @@ with tabs[2]: #javier
     elif date.strip() != "":
         st.warning("Please enter a valid date in the format 'YYYY-M-D'.")
     st.subheader('4. Optimal shift timing will be recommended to you based on the forecasted total average revenue across all locations')
+    try:
+        query = 'SELECT * FROM "weadf_trend" WHERE DATE = \'{}\''.format(for_weadf)
 
-    query = 'SELECT * FROM "weadf_trend" WHERE DATE = \'{}\''.format(for_weadf)
-
-    session.use_schema("ANALYTICS")
-    weadf=session.sql(query).toPandas()
-    weadf['LOCATION_ID']=weadf['LOCATION_ID'].astype('str')
-    weadf['WEATHERCODE']=weadf['WEATHERCODE'].astype('int64')
-    weadf['H']=weadf['H'].astype('int64')
+        session.use_schema("ANALYTICS")
+        weadf=session.sql(query).toPandas()
+        weadf['LOCATION_ID']=weadf['LOCATION_ID'].astype('str')
+        weadf['WEATHERCODE']=weadf['WEATHERCODE'].astype('int64')
+        weadf['H']=weadf['H'].astype('int64')
+    except:pass
 
 
     def find_optimal_hour(truck_id,date,no_of_hours):
