@@ -195,7 +195,7 @@ def train_nathan_model():
     xgb.fit(X_train, y_train, early_stopping_rounds=10, eval_set=[(X_test, y_test)])
     joblib.dump(xgb, 'nathan_model.joblib')
 
-def train_vibu_model()::
+def train_vibu_model():
     xgb = XGBRegressor(objective='reg:squarederror',
     learning_rate= 0.01,
     max_depth= 6,
