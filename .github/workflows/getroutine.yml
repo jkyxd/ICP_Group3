@@ -10,6 +10,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+            token:
+                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
         
         
       - name: Setup Python
