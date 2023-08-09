@@ -1682,8 +1682,8 @@ with tabs[1]: #Vibu
         st.session_state.truck_fiter = None
             
     with st.form("RunMapForm2"):
-        st.form_submit_button("Run Map")
-    
+        
+    if st.form_submit_button("Run Map"):
         if truck_filter:
             
                 if truck_filter != st.session_state.truck_fiter:
