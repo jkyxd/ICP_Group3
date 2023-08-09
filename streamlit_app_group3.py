@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 from datetime import timedelta
 import math
+import plotly.graph_objects as go
 
 import folium
 from streamlit_folium import st_folium
@@ -25,72 +26,24 @@ from streamlit_javascript import st_javascript
 st.set_page_config(layout="wide")
 
 #Loading model and data
-model=joblib.load('model.joblib')
+#ayrton_model=joblib.load('ayrton_model.joblib')
+javier_model=joblib.load('javier_model.joblib')
+#minh_model=joblib.load('minh_model.joblib')
+#nathan_model=joblib.load('nathan_model.joblib')
+#vibu_model=joblib.load('vibu_model.joblib')
 old_updated_model=joblib.load('updated_old_model.joblib')
+old_model=joblib.load('model.joblib')
+model=javier_model
 connection_parameters = { "account": 'hiioykl-ix77996',"user": 'JAVIER',"password": '02B289223r04', "role": "ACCOUNTADMIN","database": "FROSTBYTE_TASTY_BYTES","warehouse": "COMPUTE_WH"}
 
 session = Session.builder.configs(connection_parameters).create()
 X_final_scaled=pd.read_csv('x_final_scaled.csv')
-unique_location_ids = X_final_scaled['LOCATION_ID'].unique()
-testing=session.sql('SELECT * FROM TRUCK')
-# Create a list to store the tables data
-table_data = []
-# Create a DataFrame to store the table data
-df_unique_locations_lat_long = pd.DataFrame(columns=["Location ID", "Latitude", "Longitude"])
-public_holidays = [
-    {'Month': 7, 'Day': 4, 'DOW': None, 'WOM': None},  # 4th of July
-    {'Month': 12, 'Day': 24, 'DOW': None, 'WOM': None},  # Christmas Eve
-    {'Month': 12, 'Day': 25, 'DOW': None, 'WOM': None},  # Christmas Day
-    {'Month': 10, 'Day': None, 'DOW': '0', 'WOM': 2},  # Columbus Day (second Monday in October)
-    {'Month': 6, 'Day': 19, 'DOW': None, 'WOM': None},  # Juneteenth
-    {'Month': 9, 'Day': None, 'DOW': '0', 'WOM': 1},  # Labor Day (first Monday in September)
-    {'Month': 1, 'Day': None, 'DOW': '0', 'WOM': 3},  # Martin Luther King, Jr. Day (third Monday in January)
-    {'Month': 5, 'Day': None, 'DOW': '0', 'WOM': -1},  # Memorial Day (last Monday in May)
-    {'Month': 1, 'Day': 1, 'DOW': None, 'WOM': None},  # New Year's Day
-    {'Month': 12, 'Day': 31, 'DOW': None, 'WOM': None},  # New Year's Eve
-    {'Month': 11, 'Day': None, 'DOW': '3', 'WOM': 4},  # Thanksgiving Day (fourth Thursday in November)
-    {'Month': 11, 'Day': None, 'DOW': '2', 'WOM': 4},  # Thanksgiving Eve (fourth Wednesday in November)
-    {'Month': 2, 'Day': 14, 'DOW': None, 'WOM': None},  # Valentine's Day
-    {'Month': 11, 'Day': 11, 'DOW': None, 'WOM': None},  # Veterans Day
-    {'Month': 10, 'Day': 31, 'DOW': None, 'WOM': None},  # Halloween
-    {'Month': 3, 'Day': 17, 'DOW': None, 'WOM': None},  # St. Patrick's Day
-    {'Month': 11, 'Day': 25, 'DOW': '4', 'WOM': None},  # Black Friday
-    {'Month': 12, 'Day': 26, 'DOW': None, 'WOM': None},  # Boxing Day
-]
 
-# Iterate over each unique location ID
-for location_id in unique_location_ids:
-    location = X_final_scaled[X_final_scaled['LOCATION_ID'] == location_id]
-    latitude = location['LAT'].values[0]
-    longitude = location['LONG'].values[0]
-    df_unique_locations_lat_long = pd.concat([df_unique_locations_lat_long, pd.DataFrame({"Location ID": [location_id],
-                                                  "Latitude": [latitude],
-                                                  "Longitude": [longitude]})],
-                         ignore_index=True)
 import plotly.express as px
 st.title('SpeedyBytes 🚚')
 # st.image('speedybytes_icon2.jpg',  width=600)
 
-# query = 'SELECT * FROM "weadf_trend"'
-
-# session.use_schema("ANALYTICS")
-# weadf=session.sql(query).toPandas()
-# st.image('speedybytes_icon2.jpg',width=600)
-@st.cache_data  #for caching the csvs
-def load_truck_data():
-    df = pd.read_csv('truck_df.csv')
-    return df
-
-@st.cache_data
-def load_sales_pred():
-    df=pd.read_csv('sales_pred.csv')
-    return df
-
-@st.cache_data
-def load_x_final_scaled():
-    df=pd.read_csv('x_final_scaled.csv')
-    return df
-list_of_tabs = ["Routing Map", "Current vs Usual Route", "Optimal Shift Timing Recommendation", "tab4", "Revenue Forecasting & Model Performance"]
+list_of_tabs = ["Routing Map", "Current vs Usual Route", "Optimal Shift Timing Recommendation", "Revenue By Location & Time", "Revenue Forecasting & Model Performance"]
 tabs = st.tabs(list_of_tabs)
 
 #Code to get the updated model from asg2
@@ -139,6 +92,103 @@ def trim_outliers(dataframe, column, lower_percentile=0.01, upper_percentile=0.9
     lower_bound = dataframe[column].quantile(lower_percentile)
     upper_bound = dataframe[column].quantile(upper_percentile)
     return dataframe[(dataframe[column] >= lower_bound) & (dataframe[column] <= upper_bound)]
+
+from sklearn.model_selection import GridSearchCV
+def train_javier_model():
+    xgb = XGBRegressor(objective= 'reg:squarederror',
+    learning_rate= 0.0125, 
+    max_depth= 7,
+    colsample_bytree= 0.65, 
+    n_estimators= 751,  
+    subsample= 0.9,  
+    min_child_weight= 5, 
+    gamma= 0.2,  
+    )
+    xgb.fit(X_train, y_train, early_stopping_rounds=10, eval_set=[(X_test, y_test)])
+    joblib.dump(xgb, 'javier_model.joblib')
+
+def train_minh_model():
+    def log_transform(dataframe, column):
+        dataframe[column] = np.log1p(dataframe[column])
+        return dataframe
+    X_final_scaled = log_transform(X_final_scaled, 'Revenue')
+    # Split the dataset into features (X) and target (y)
+    X = X_final_scaled.drop("Revenue",axis=1)
+    y = X_final_scaled["Revenue"]
+    # Split the dataset into training and testing datasets
+    X_training, X_holdout, y_training, y_holdout = train_test_split(X, y, test_size=0.2)
+    X_train, X_test, y_train, y_test = train_test_split(X_training, y_training, test_size=0.2)
+
+    # Define the grid of hyperparameters to search
+    param_grid = {
+        'learning_rate': [0.01, 0.015, 0.02],
+        'max_depth': [6, 7, 8, 9],
+        'colsample_bytree': [0.5, 0.6, 0.7],
+        'n_estimators': [600, 700, 800],
+        'subsample': [0.8, 0.9, 0.95],
+        'min_child_weight': [2, 3, 4],
+        'gamma': [0.1, 0.2]
+    }
+
+    # Initialize GridSearchCV
+    grid_search = GridSearchCV(estimator=xgb_model, param_grid=param_grid, scoring='neg_mean_squared_error', cv=3)
+
+    # Fit the grid search to the data
+    grid_search.fit(X_train, y_train)
+
+    # Print the best hyperparameters and corresponding score
+    print("Best Hyperparameters:", grid_search.best_params_)
+    print("Best Score:", -grid_search.best_score_)  # Negative of mean squared error
+
+    xgb = XGBRegressor(objective= 'reg:squarederror',
+    learning_rate= 0.015,
+    max_depth= 8, 
+    colsample_bytree= 0.6,
+    n_estimators= 700,  
+    subsample= 0.9,  
+    min_child_weight= 3, 
+    gamma= 0.1
+    )
+    xgb.fit(X_train, y_train, early_stopping_rounds=10, eval_set=[(X_test, y_test)])
+    joblib.dump(xgb, 'minh_model.joblib')
+
+def train_ayrton_model():    
+    xgb = XGBRegressor(objective= 'reg:squarederror',
+    learning_rate= 0.01,
+    max_depth= 10,
+    colsample_bytree= 0.6,
+    n_estimators= 1200,
+    subsample= 0.9,
+    min_child_weight= 5,
+    gamma= 0.1)
+    xgb.fit(X_train, y_train, early_stopping_rounds=10, eval_set=[(X_test, y_test)])
+    joblib.dump(xgb, 'ayrton_model.joblib')
+
+def train_nathan_model():
+    xgb = XGBRegressor(objective= 'reg:squarederror',
+    learning_rate= 0.005,
+    max_depth= 8,
+    colsample_bytree= 0.8,
+    n_estimators= 1000,
+    subsample= 0.75,
+    min_child_weight= 1,
+    gamma= 0.2
+    )
+    xgb.fit(X_train, y_train, early_stopping_rounds=10, eval_set=[(X_test, y_test)])
+    joblib.dump(xgb, 'nathan_model.joblib')
+
+def train_vibu_model():
+    xgb = XGBRegressor(objective='reg:squarederror',
+    learning_rate= 0.01,
+    max_depth= 6,
+    colsample_bytree= 0.7,
+    n_estimators= 800,
+    subsample= 0.85,
+    min_child_weight= 3,
+    gamma= 0.3
+    )
+    xgb.fit(X_train, y_train, early_stopping_rounds=10, eval_set=[(X_test, y_test)])
+    joblib.dump(xgb, 'vibu_model.joblib')
 
 with tabs[0]: #Nathan
 
@@ -849,10 +899,45 @@ with tabs[0]: #Nathan
 
     map_placeholder = st.empty()
         
+unique_location_ids = X_final_scaled['LOCATION_ID'].unique()
+testing=session.sql('SELECT * FROM TRUCK')
+# Create a list to store the tables data
+table_data = []
+# Create a DataFrame to store the table data
+df_unique_locations_lat_long = pd.DataFrame(columns=["Location ID", "Latitude", "Longitude"])
+public_holidays = [
+    {'Month': 7, 'Day': 4, 'DOW': None, 'WOM': None},  # 4th of July
+    {'Month': 12, 'Day': 24, 'DOW': None, 'WOM': None},  # Christmas Eve
+    {'Month': 12, 'Day': 25, 'DOW': None, 'WOM': None},  # Christmas Day
+    {'Month': 10, 'Day': None, 'DOW': '0', 'WOM': 2},  # Columbus Day (second Monday in October)
+    {'Month': 6, 'Day': 19, 'DOW': None, 'WOM': None},  # Juneteenth
+    {'Month': 9, 'Day': None, 'DOW': '0', 'WOM': 1},  # Labor Day (first Monday in September)
+    {'Month': 1, 'Day': None, 'DOW': '0', 'WOM': 3},  # Martin Luther King, Jr. Day (third Monday in January)
+    {'Month': 5, 'Day': None, 'DOW': '0', 'WOM': -1},  # Memorial Day (last Monday in May)
+    {'Month': 1, 'Day': 1, 'DOW': None, 'WOM': None},  # New Year's Day
+    {'Month': 12, 'Day': 31, 'DOW': None, 'WOM': None},  # New Year's Eve
+    {'Month': 11, 'Day': None, 'DOW': '3', 'WOM': 4},  # Thanksgiving Day (fourth Thursday in November)
+    {'Month': 11, 'Day': None, 'DOW': '2', 'WOM': 4},  # Thanksgiving Eve (fourth Wednesday in November)
+    {'Month': 2, 'Day': 14, 'DOW': None, 'WOM': None},  # Valentine's Day
+    {'Month': 11, 'Day': 11, 'DOW': None, 'WOM': None},  # Veterans Day
+    {'Month': 10, 'Day': 31, 'DOW': None, 'WOM': None},  # Halloween
+    {'Month': 3, 'Day': 17, 'DOW': None, 'WOM': None},  # St. Patrick's Day
+    {'Month': 11, 'Day': 25, 'DOW': '4', 'WOM': None},  # Black Friday
+    {'Month': 12, 'Day': 26, 'DOW': None, 'WOM': None},  # Boxing Day
+]
 
+# Iterate over each unique location ID
+for location_id in unique_location_ids:
+    location = X_final_scaled[X_final_scaled['LOCATION_ID'] == location_id]
+    latitude = location['LAT'].values[0]
+    longitude = location['LONG'].values[0]
+    df_unique_locations_lat_long = pd.concat([df_unique_locations_lat_long, pd.DataFrame({"Location ID": [location_id],
+                                                  "Latitude": [latitude],
+                                                  "Longitude": [longitude]})],
+                         ignore_index=True)
 with tabs[2]: #javier
-    X_final_scaled=load_x_final_scaled()
-    sales_pred=load_sales_pred()
+    X_final_scaled=pd.read_csv("x_final_scaled.csv")
+    sales_pred=pd.read_csv("sales_pred.csv")
     X_final_scaled=X_final_scaled.merge(sales_pred["l_w5i8_DATE"].astype(str).str[:4].rename('YEAR'), left_index=True, right_index=True)
     st.header('Optimal Shift Timing Recommendation')
     st.subheader('Want to find out the optimal working hours for your truck?')
@@ -894,7 +979,7 @@ with tabs[2]: #javier
     if is_valid_date_format(date):
         st.success(f"Your input date '{date}' has been saved !")
         date_d=pd.to_datetime(date)
-        datetime_object = datetime.datetime.strptime(date, '%Y-%m-%d')
+        datetime_object = datetime.strptime(date, '%Y-%m-%d')
         
         
         input_df = pd.DataFrame({'TRUCK_ID': [truck_id],'date': [date]})
@@ -1078,7 +1163,282 @@ with tabs[2]: #javier
     
 
 with tabs[3]: #Aryton
-    print('Aryton')
+    
+    def load_map():
+    
+        # Create an empty list to store the rows
+        locationlist = []
+    
+        if len(df_selected_loc) == 0:
+            for index, row in df_loc.iterrows():
+                # Create a dictionary to store the row values
+                temp = [row['LOCATION_ID'], row['LAT'], row['LONG']]
+                # Append the row dictionary to the list
+                locationlist.append(temp)
+        else:
+            for index, row in df_selected_loc.iterrows():
+                # Create a dictionary to store the row values
+                temp = [row['LOCATION_ID'], row['LAT'], row['LONG']]
+                # Append the row dictionary to the list
+                locationlist.append(temp)
+    
+    
+        if 17 in truck_id or 28 in truck_id or 21 in truck_id:
+            if current_loc == 'Yes':
+                DEFAULT_LATITUDE = 39.750
+                DEFAULT_LONGITUDE = -104.991
+                zoom = 15
+                curr_coords = [DEFAULT_LATITUDE, DEFAULT_LONGITUDE]
+            else: 
+                DEFAULT_LATITUDE = 39.732266
+                DEFAULT_LONGITUDE = -104.966468
+                zoom = 10
+    
+        elif 43 in truck_id or 34 in truck_id:
+            if current_loc == 'Yes':
+                DEFAULT_LATITUDE = 47.541
+                DEFAULT_LONGITUDE = -122.345
+                zoom = 13
+                curr_coords = [DEFAULT_LATITUDE, DEFAULT_LONGITUDE]
+    
+            else: 
+                DEFAULT_LATITUDE = 47.521137
+                DEFAULT_LONGITUDE = -122.335267
+                zoom = 10
+    
+    
+        elif 46 in truck_id or 47 in truck_id:
+            if current_loc == 'Yes':
+                DEFAULT_LATITUDE = 42.340
+                DEFAULT_LONGITUDE = -71.083
+                zoom = 15
+                curr_coords = [DEFAULT_LATITUDE, DEFAULT_LONGITUDE]
+    
+            else: 
+                DEFAULT_LATITUDE = 42.337187
+                DEFAULT_LONGITUDE = -71.071033
+                zoom = 11
+    
+        elif 1 in truck_id or 2 in truck_id or 13 in truck_id: 
+        
+            if current_loc == 'Yes':
+                DEFAULT_LATITUDE = 37.553699
+                DEFAULT_LONGITUDE = -122.310166
+                curr_coords = [DEFAULT_LATITUDE, DEFAULT_LONGITUDE]
+    
+                zoom = 15
+    
+            else: 
+                DEFAULT_LATITUDE = 37.553699
+                DEFAULT_LONGITUDE = -122.310166
+                curr_coords = [DEFAULT_LATITUDE, DEFAULT_LONGITUDE]
+    
+                zoom = 13
+    
+            
+    
+    
+        #map
+            
+        m2 = folium.Map(location=[DEFAULT_LATITUDE, DEFAULT_LONGITUDE], zoom_start=zoom)
+    
+        # Iterate over the locationlist
+        for point in range(0, len(locationlist)):
+            # Get the latitude and longitude values
+            loc_id = locationlist[point][0]
+            selected_latitude = locationlist[point][1]
+            selected_longitude = locationlist[point][2]
+    
+            # Create the popup content with the latitude and longitude
+            popup_content = f"Location ID: {loc_id}, Latitude: {selected_latitude}, Longitude: {selected_longitude}"
+            popup = folium.Popup(popup_content, max_width=150)
+            coords = (locationlist[point][1], locationlist[point][2])
+            # Create a marker with the popup
+            marker = folium.Marker(coords, popup=popup)
+            marker.add_to(m2)
+    
+        if current_loc == 'Yes':
+            # Create the popup content
+            popup_content = f"YOU ARE HERE!"
+            popup = folium.Popup(popup_content, max_width=100, sticky=True)
+    
+            # Create a marker with the popup
+            marker_icon = folium.Icon(color='red', icon='circle')
+            marker = folium.Marker(curr_coords, popup=popup, icon=marker_icon)
+            marker.add_to(m2)
+    
+            folium.Circle(
+                location=curr_coords,
+                radius=1000,  # 1km in meters
+                color='red',
+                fill=False
+            ).add_to(m2)
+    
+        f_map = st_folium(m2, width=725)
+        return df_loc
+    
+    def get_inputs():
+    
+        #DELETE LATER
+        #truck_id = [27]
+        #selected_loc_id = [14808, 14806, 3447]
+        #hour = 8
+    
+    
+        lat_input = []
+        long_input = []
+        #loc_input = selected_loc_id * len(truck_id)
+        #truckid_input = [id for id in truck_id for _ in range(len(selected_loc_id))]
+    
+        for loc in selected_loc_id:
+            temp = df_loc[df_loc['LOCATION_ID']==loc]
+            lat = temp['LAT'].iloc[0]
+            long = temp['LONG'].iloc[0]
+            lat_input.append(lat)
+            long_input.append(long)
+    
+        #lat_input = lat_temp * len(truck_id)
+        #long_input = long_temp * len(truck_id)
+    
+    
+        input_df = pd.DataFrame({'TRUCK_ID': truck_id*len(selected_loc_id),'LOCATION_ID': selected_loc_id, 'LAT': lat_input, 'LONG': long_input})
+        date = '2020-8-25'
+        input_df['DATE'] = date
+        date_dt = pd.to_datetime(input_df['DATE'])
+        input_df.drop(columns='DATE', inplace = True)
+        input_df['MONTH'] = date_dt.dt.month
+        input_df['DOW'] = date_dt.dt.weekday
+        input_df['DAY'] = date_dt.dt.day
+        input_df['HOUR'] = hour
+    
+    
+        #get public holiday column
+        country_code = 'US'  # Replace with the appropriate country code
+        holiday_list = holidays.CountryHoliday(country_code)
+    
+        # Create a new column "PUBLIC_HOLIDAY" and set initial values to 0
+        input_df['PUBLIC_HOLIDAY'] = 0
+    
+        # Check if the date is a public holiday
+        if date in holiday_list:
+            # Set the value of "PUBLIC_HOLIDAY" to 1 if it is a public holiday
+            input_df['PUBLIC_HOLIDAY'] = 1
+        
+        #get lat & long based on loc_id user input
+        #temp = df_selected_loc[df_loc['LOCATION_ID']==loc_id]
+        #input_df['LAT'] = temp['LAT']
+        #input_df['LONG'] = temp['LONG']
+        #input_df['LOCATION_ID'] = loc_id
+        input_df['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'] = x_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].mean()
+        input_df['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'] = x_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].mean()
+    
+    
+    
+        #get encoded features
+        month = input_df['MONTH'].iloc[0]
+        #year = str(input_df['YEAR'].iloc[0])
+        current_df = x_final_scaled[(x_final_scaled['TRUCK_ID'].isin(truck_id)) & (x_final_scaled['MONTH'] == month)] #& (x_final_scaled['YEAR'] == year)
+        encoded_X = current_df[['TRUCK_ID','MENU_TYPE_GYROS_ENCODED', 'MENU_TYPE_CREPES_ENCODED', 'MENU_TYPE_BBQ_ENCODED', 'MENU_TYPE_SANDWICHES_ENCODED', 'MENU_TYPE_Mac & Cheese_encoded', 'MENU_TYPE_POUTINE_ENCODED', 'MENU_TYPE_ETHIOPIAN_ENCODED', 'MENU_TYPE_TACOS_ENCODED', 'MENU_TYPE_Ice Cream_encoded', 'MENU_TYPE_Hot Dogs_encoded', 'MENU_TYPE_CHINESE_ENCODED', 'MENU_TYPE_Grilled Cheese_encoded', 'MENU_TYPE_VEGETARIAN_ENCODED', 'MENU_TYPE_INDIAN_ENCODED', 'MENU_TYPE_RAMEN_ENCODED', 'CITY_SEATTLE_ENCODED', 'CITY_DENVER_ENCODED', 'CITY_San Mateo_encoded', 'CITY_New York City_encoded', 'CITY_BOSTON_ENCODED', 'REGION_NY_ENCODED', 'REGION_MA_ENCODED', 'REGION_CO_ENCODED', 'REGION_WA_ENCODED', 'REGION_CA_ENCODED']].drop_duplicates()
+        input_df = pd.merge(input_df, encoded_X,  how='left', left_on=['TRUCK_ID'], right_on =['TRUCK_ID']).drop_duplicates()
+        sum_X = current_df[['TRUCK_ID','MONTH','HOUR','DAY','SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE', 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE']]
+        input_df = pd.merge(input_df, sum_X,  how='left', left_on=['TRUCK_ID','HOUR','MONTH','DAY'], right_on =['TRUCK_ID','HOUR','MONTH','DAY']).drop_duplicates()
+        input_df.drop(columns = ['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE_y', 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE_y'], inplace = True)
+        input_df = input_df.rename(columns={'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE_x': 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'})
+        input_df = input_df.rename(columns={'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE_x': 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'})
+    
+        input_df.drop_duplicates(inplace=True)
+    
+        #GET WEATHER DATA
+        wdf=session.sql("Select * from ANALYTICS.WEATHER_DATA_API")
+        wdf=wdf.withColumn("H",F.substring(wdf["TIME"], 12, 2).cast("integer"))
+        wdf=wdf.withColumn("DATE",F.substring(wdf["TIME"], 0, 10))
+        wdf=wdf.select("WEATHERCODE","LOCATION_ID","H","DATE" )
+        wdf=wdf.to_pandas() 
+        wdf['MONTH'] = wdf['DATE'].apply(lambda x: x[5:7]).astype(int)
+        wdf[['LOCATION_ID', 'H']] = wdf[['LOCATION_ID', 'H']].astype(str)
+    
+        weather_input = []
+    
+        for loc in selected_loc_id:
+            filtered_wdf = wdf[(wdf['LOCATION_ID']== str(loc)) & (wdf['H']==str(hour)) & (wdf['MONTH']==month)]
+            #CHECK WHAT IS THE MOST PROBABLE WEATHER BASED ON MONTH HOUR AND LOCATION
+            filtered_wdf['WEATHERCODE'].value_counts()
+            #GET MOST COMMON WEATHERCODE
+            weathercode = filtered_wdf['WEATHERCODE'].value_counts().idxmax()
+            weather_input.append(weathercode)
+    
+        input_df['WEATHERCODE'] = weather_input
+    
+        #rearrange columns
+        input_final = input_df[['TRUCK_ID', 'MONTH', 'HOUR', 'DOW', 'DAY', 'PUBLIC_HOLIDAY', 'LAT', 'LONG', 'LOCATION_ID', 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE', 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE', 'WEATHERCODE', 'MENU_TYPE_GYROS_ENCODED', 'MENU_TYPE_CREPES_ENCODED', 'MENU_TYPE_BBQ_ENCODED', 'MENU_TYPE_SANDWICHES_ENCODED', 'MENU_TYPE_Mac & Cheese_encoded', 'MENU_TYPE_POUTINE_ENCODED', 'MENU_TYPE_ETHIOPIAN_ENCODED', 'MENU_TYPE_TACOS_ENCODED', 'MENU_TYPE_Ice Cream_encoded', 'MENU_TYPE_Hot Dogs_encoded', 'MENU_TYPE_CHINESE_ENCODED', 'MENU_TYPE_Grilled Cheese_encoded', 'MENU_TYPE_VEGETARIAN_ENCODED', 'MENU_TYPE_INDIAN_ENCODED', 'MENU_TYPE_RAMEN_ENCODED', 'CITY_SEATTLE_ENCODED', 'CITY_DENVER_ENCODED', 'CITY_San Mateo_encoded', 'CITY_New York City_encoded', 'CITY_BOSTON_ENCODED', 'REGION_NY_ENCODED', 'REGION_MA_ENCODED', 'REGION_CO_ENCODED', 'REGION_WA_ENCODED', 'REGION_CA_ENCODED']]
+    
+        #make prediction
+        model = joblib.load('model.joblib')
+        prediction = model.predict(input_final)
+        input_final['PREDICTED'] = prediction
+        results = input_final[['TRUCK_ID', 'LOCATION_ID', 'HOUR', 'PREDICTED']]
+    
+        return results
+    
+    
+    connection_parameters = { "account": 'hiioykl-ix77996',"user": 'AYRTON',"password": 'Arron19*', "role": "ACCOUNTADMIN","database": "FROSTBYTE_TASTY_BYTES","warehouse": "COMPUTE_WH"}
+    session = Session.builder.configs(connection_parameters).create()
+    
+    #tab headers
+    st.title('Compare sales by location and hour')
+    st.write('''###### This tab allows you to predict and visualise the sales for the specified location and hour''')
+    
+    truck_id = st.selectbox('Select Truck ID to view the locations available to you:', [27, 28, 43, 44, 46, 47])
+    truck_id = [truck_id]
+    current_loc = st.selectbox("Go to your current location? ***(SHOWN AS RED MARKER ON MAP)***", ("Yes", "No"))
+    
+    #get x_final_scaled
+    x_final_scaled = pd.read_csv('x_final_scaled.csv')
+    df_loc = x_final_scaled[['LOCATION_ID', 'LAT', 'LONG', 'TRUCK_ID']]
+    df_loc.drop_duplicates(inplace=True)
+    all_loc_list = df_loc['LOCATION_ID'].unique().tolist()
+    df_selected_loc =  df_loc[df_loc['TRUCK_ID'].isin(truck_id)]
+    selected_loc_list = df_selected_loc['LOCATION_ID'].unique().tolist()
+    
+    with st.form("RunMapForm7"):
+        if st.form_submit_button("Run Map"):
+    
+            if truck_id:
+                    if truck_id != st.session_state.prev_selected_truck_ids:
+                            # Save the current selected truck IDs to session state
+                            selected_truck_ids_str = ', '.join(str(truck_id) for truck_id in truck_id)
+                            st.success(f"Your selected Truck IDs {selected_truck_ids_str} have been saved!")
+                            # Create the map and display truck routes
+                            load_map()
+                    else:
+                            st.info("Selected truck IDs have not changed. The map has not been changed.")
+                            load_map()
+            else:
+                    st.info("No truck IDs have been selected.")
+        else:
+            st.write('Awaiting command.....')
+    
+    
+    st.subheader('User Input Parameters')
+    
+    #slider for hour of day
+    hour = st.slider('Select the hour of the day to predict sales for location(s):', 8,23,13)
+    #input loc id
+    selected_loc_id = st.multiselect('Select location(s) for sales prediction:', selected_loc_list)
+    
+    
+    if st.button('Predict'):
+        results = get_inputs() #input in df form
+        # Round off the predicted values to 2 decimal places
+        results = results.sort_values('PREDICTED', ascending=False)
+        results["LOCATION_ID"] = results["LOCATION_ID"].astype(str)
+    
+        fig = px.bar(results, y='PREDICTED', x='LOCATION_ID', text_auto='.2f', title="Predicted sales for each location for hour {}".format(hour))
+        
+        fig.update_xaxes(type='category')
+    
+        # Display the bar chart using st.plotly_chart
+        st.plotly_chart(fig)
 
 
    
@@ -1303,9 +1663,9 @@ with tabs[1]: #Vibu
         st.session_state.truck_fiter = None
             
     with st.form("RunMapForm2"):
-        st.form_submit_button("Run Map")
-    
-        if truck_filter:
+        
+        if st.form_submit_button("Run Map"):
+            if truck_filter:
             
                 if truck_filter != st.session_state.truck_fiter:
                             # Save the current selected truck IDs to session state
@@ -1318,7 +1678,7 @@ with tabs[1]: #Vibu
                             
                     st.info("Selected truck IDs have not changed. The map has not been changed.")
                     create_folium_map(data)
-        else:
+            else:
                 st.info("No truck IDs have been selected.")
     
         map_placeholder = st.empty()
@@ -2355,7 +2715,7 @@ with tabs[4]: #Tran Huy Minh S10223485H Tab Revenue Forecasting & Model Performa
         except Exception as e:
             print(f"An error occurred while processing the data: {e}")
 
-        selected_model = st.selectbox("Select a ML Model to see Performance", ['Old Asg2 Model', 'Updated Asg2 Model (Fixed)', 'Improved Asg3 Model (Main)'])
+        selected_model = st.selectbox("Select a ML Model to see Performance", ['Old Asg2 Model', 'Updated Asg2 Model (Fixed)', 'Improved Asg3 Model (Main)','Javier Model','Ayrton Model','Minh Model','Nathan Model','Vibu Model'])
         try:
             # Create a button to show feature importance and performance
             if st.button('Show Model Performance'):
@@ -2367,7 +2727,7 @@ with tabs[4]: #Tran Huy Minh S10223485H Tab Revenue Forecasting & Model Performa
 
                 if selected_model == 'Old Asg2 Model':
                     try:
-                        model_per = model
+                        model_per = old_model
                     except Exception as e:
                             print(f"An error occurred while loading the model from the file: {e}")
                     # Winsorize the target and some features to reduce the impact of outliers
@@ -2386,12 +2746,48 @@ with tabs[4]: #Tran Huy Minh S10223485H Tab Revenue Forecasting & Model Performa
                     X_final_scaled = X_final_scaled.loc[~outliers_IV]
                     outliers_IV = np.where(X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'] >0.7, True, np.where(X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'] < -0.7, True, False))
                     X_final_scaled = X_final_scaled.loc[~outliers_IV]
-
-                else:
+                elif selected_model == 'Ayrton Model':
+                    try:
+                        model_per = ayrton_model
+                    except Exception as e:
+                            print(f"An error occurred while loading the model from the file: {e}")
+                    #Trimming Outliers for Holdout Graph
+                    X_final_scaled = trim_outliers(X_final_scaled, 'Revenue')
+                elif selected_model == 'Javier Model':
+                    try:
+                        model_per = javier_model
+                    except Exception as e:
+                            print(f"An error occurred while loading the model from the file: {e}")
+                    #Trimming Outliers for Holdout Graph
+                    X_final_scaled = trim_outliers(X_final_scaled, 'Revenue')
+                elif selected_model == 'Minh Model':
+                    try:
+                        model_per = minh_model
+                    except Exception as e:
+                            print(f"An error occurred while loading the model from the file: {e}")
+                    #Trimming Outliers for Holdout Graph
+                    X_final_scaled = trim_outliers(X_final_scaled, 'Revenue')
+                    X_final_scaled['Revenue'] = np.log1p(X_final_scaled['Revenue'])
+                elif selected_model == 'Nathan Model':
+                    try:
+                        model_per = nathan_model
+                    except Exception as e:
+                            print(f"An error occurred while loading the model from the file: {e}")
+                    #Trimming Outliers for Holdout Graph
+                    X_final_scaled = trim_outliers(X_final_scaled, 'Revenue')
+                elif selected_model == 'Vibu Model':
+                    try:
+                        model_per = vibu_model
+                    except Exception as e:
+                            print(f"An error occurred while loading the model from the file: {e}")
+                    #Trimming Outliers for Holdout Graph
+                    X_final_scaled = trim_outliers(X_final_scaled, 'Revenue')
+                elif selected_model == 'Improved Asg3 Model (Main)':
                     try:
                         model_per = model
                     except Exception as e:
                             print(f"An error occurred while loading the model from the file: {e}")
+                    X_final_scaled = trim_outliers(X_final_scaled, 'Revenue')
     
                 # Split the dataset into features (X) and target (y)
                 X = X_final_scaled.drop("Revenue", axis=1)
@@ -2423,7 +2819,10 @@ with tabs[4]: #Tran Huy Minh S10223485H Tab Revenue Forecasting & Model Performa
                 mae = mean_absolute_error(y_true, y_pred)
                 mse = mean_squared_error(y_true, y_pred)
                 rmse = mean_squared_error(y_true, y_pred, squared=False)
-                r2 = r2_score(y_true, y_pred)
+                if selected_model == 'Minh Model':
+                    r2 = r2_score(np.expm1(y_true), np.expm1(y_pred))
+                else:
+                    r2 = r2_score(y_true, y_pred)
     
                 # Display the performance metrics
                 st.subheader('Model Performance on Holdout data')
