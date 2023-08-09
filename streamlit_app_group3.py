@@ -25,48 +25,19 @@ from streamlit_javascript import st_javascript
 st.set_page_config(layout="wide")
 
 #Loading model and data
-model=joblib.load('model.joblib')
+ayrton_model=joblib.load('ayrton_model.joblib')
+javier_model=joblib.load('javier_model.joblib')
+minh_model=joblib.load('minh_model.joblib')
+nathan_model=joblib.load('nathan_model.joblib')
+vibu_model=joblib.load('vibu_model.joblib')
 old_updated_model=joblib.load('updated_old_model.joblib')
+olld_model=joblib.load('old_model.joblib')
+model=joblib.load('javier_model.joblib')
 connection_parameters = { "account": 'hiioykl-ix77996',"user": 'JAVIER',"password": '02B289223r04', "role": "ACCOUNTADMIN","database": "FROSTBYTE_TASTY_BYTES","warehouse": "COMPUTE_WH"}
 
 session = Session.builder.configs(connection_parameters).create()
 X_final_scaled=pd.read_csv('x_final_scaled.csv')
-unique_location_ids = X_final_scaled['LOCATION_ID'].unique()
-testing=session.sql('SELECT * FROM TRUCK')
-# Create a list to store the tables data
-table_data = []
-# Create a DataFrame to store the table data
-df_unique_locations_lat_long = pd.DataFrame(columns=["Location ID", "Latitude", "Longitude"])
-public_holidays = [
-    {'Month': 7, 'Day': 4, 'DOW': None, 'WOM': None},  # 4th of July
-    {'Month': 12, 'Day': 24, 'DOW': None, 'WOM': None},  # Christmas Eve
-    {'Month': 12, 'Day': 25, 'DOW': None, 'WOM': None},  # Christmas Day
-    {'Month': 10, 'Day': None, 'DOW': '0', 'WOM': 2},  # Columbus Day (second Monday in October)
-    {'Month': 6, 'Day': 19, 'DOW': None, 'WOM': None},  # Juneteenth
-    {'Month': 9, 'Day': None, 'DOW': '0', 'WOM': 1},  # Labor Day (first Monday in September)
-    {'Month': 1, 'Day': None, 'DOW': '0', 'WOM': 3},  # Martin Luther King, Jr. Day (third Monday in January)
-    {'Month': 5, 'Day': None, 'DOW': '0', 'WOM': -1},  # Memorial Day (last Monday in May)
-    {'Month': 1, 'Day': 1, 'DOW': None, 'WOM': None},  # New Year's Day
-    {'Month': 12, 'Day': 31, 'DOW': None, 'WOM': None},  # New Year's Eve
-    {'Month': 11, 'Day': None, 'DOW': '3', 'WOM': 4},  # Thanksgiving Day (fourth Thursday in November)
-    {'Month': 11, 'Day': None, 'DOW': '2', 'WOM': 4},  # Thanksgiving Eve (fourth Wednesday in November)
-    {'Month': 2, 'Day': 14, 'DOW': None, 'WOM': None},  # Valentine's Day
-    {'Month': 11, 'Day': 11, 'DOW': None, 'WOM': None},  # Veterans Day
-    {'Month': 10, 'Day': 31, 'DOW': None, 'WOM': None},  # Halloween
-    {'Month': 3, 'Day': 17, 'DOW': None, 'WOM': None},  # St. Patrick's Day
-    {'Month': 11, 'Day': 25, 'DOW': '4', 'WOM': None},  # Black Friday
-    {'Month': 12, 'Day': 26, 'DOW': None, 'WOM': None},  # Boxing Day
-]
 
-# Iterate over each unique location ID
-for location_id in unique_location_ids:
-    location = X_final_scaled[X_final_scaled['LOCATION_ID'] == location_id]
-    latitude = location['LAT'].values[0]
-    longitude = location['LONG'].values[0]
-    df_unique_locations_lat_long = pd.concat([df_unique_locations_lat_long, pd.DataFrame({"Location ID": [location_id],
-                                                  "Latitude": [latitude],
-                                                  "Longitude": [longitude]})],
-                         ignore_index=True)
 import plotly.express as px
 st.title('SpeedyBytes 🚚')
 # st.image('speedybytes_icon2.jpg',  width=600)
@@ -139,6 +110,103 @@ def trim_outliers(dataframe, column, lower_percentile=0.01, upper_percentile=0.9
     lower_bound = dataframe[column].quantile(lower_percentile)
     upper_bound = dataframe[column].quantile(upper_percentile)
     return dataframe[(dataframe[column] >= lower_bound) & (dataframe[column] <= upper_bound)]
+
+from sklearn.model_selection import GridSearchCV
+def train_javier_model():
+    xgb = XGBRegressor(objective= 'reg:squarederror',
+    learning_rate= 0.0125, 
+    max_depth= 7,
+    colsample_bytree= 0.65, 
+    n_estimators= 751,  
+    subsample= 0.9,  
+    min_child_weight= 5, 
+    gamma= 0.2,  
+    )
+    xgb.fit(X_train, y_train, early_stopping_rounds=10, eval_set=[(X_test, y_test)])
+    joblib.dump(xgb, 'javier_model.joblib')
+
+def train_minh_model():
+    def log_transform(dataframe, column):
+        dataframe[column] = np.log1p(dataframe[column])
+        return dataframe
+    X_final_scaled = log_transform(X_final_scaled, 'Revenue')
+    # Split the dataset into features (X) and target (y)
+    X = X_final_scaled.drop("Revenue",axis=1)
+    y = X_final_scaled["Revenue"]
+    # Split the dataset into training and testing datasets
+    X_training, X_holdout, y_training, y_holdout = train_test_split(X, y, test_size=0.2)
+    X_train, X_test, y_train, y_test = train_test_split(X_training, y_training, test_size=0.2)
+
+    # Define the grid of hyperparameters to search
+    param_grid = {
+        'learning_rate': [0.01, 0.015, 0.02],
+        'max_depth': [6, 7, 8, 9],
+        'colsample_bytree': [0.5, 0.6, 0.7],
+        'n_estimators': [600, 700, 800],
+        'subsample': [0.8, 0.9, 0.95],
+        'min_child_weight': [2, 3, 4],
+        'gamma': [0.1, 0.2]
+    }
+
+    # Initialize GridSearchCV
+    grid_search = GridSearchCV(estimator=xgb_model, param_grid=param_grid, scoring='neg_mean_squared_error', cv=3)
+
+    # Fit the grid search to the data
+    grid_search.fit(X_train, y_train)
+
+    # Print the best hyperparameters and corresponding score
+    print("Best Hyperparameters:", grid_search.best_params_)
+    print("Best Score:", -grid_search.best_score_)  # Negative of mean squared error
+
+    xgb = XGBRegressor(objective= 'reg:squarederror',
+    learning_rate= 0.015,
+    max_depth= 8, 
+    colsample_bytree= 0.6,
+    n_estimators= 700,  
+    subsample= 0.9,  
+    min_child_weight= 3, 
+    gamma= 0.1
+    )
+    xgb.fit(X_train, y_train, early_stopping_rounds=10, eval_set=[(X_test, y_test)])
+    joblib.dump(xgb, 'minh_model.joblib')
+
+def train_ayrton_model():    
+    xgb = XGBRegressor(objective= 'reg:squarederror',
+    learning_rate= 0.01,
+    max_depth= 10,
+    colsample_bytree= 0.6,
+    n_estimators= 1200,
+    subsample= 0.9,
+    min_child_weight= 5,
+    gamma= 0.1)
+    xgb.fit(X_train, y_train, early_stopping_rounds=10, eval_set=[(X_test, y_test)])
+    joblib.dump(xgb, 'ayrton_model.joblib')
+
+def train_nathan_model():
+    xgb = XGBRegressor(objective= 'reg:squarederror',
+    learning_rate= 0.005
+    max_depth= 8
+    colsample_bytree= 0.8
+    n_estimators= 1000
+    subsample= 0.75
+    min_child_weight= 1
+    gamma= 0.2
+    )
+    xgb.fit(X_train, y_train, early_stopping_rounds=10, eval_set=[(X_test, y_test)])
+    joblib.dump(xgb, 'nathan_model.joblib')
+
+def train_vibu_model()::
+    xgb = XGBRegressor(objective='reg:squarederror',
+    learning_rate= 0.01,
+    max_depth= 6,
+    colsample_bytree= 0.7,
+    n_estimators= 800,
+    subsample= 0.85,
+    min_child_weight= 3,
+    gamma= 0.3
+    )
+    xgb.fit(X_train, y_train, early_stopping_rounds=10, eval_set=[(X_test, y_test)])
+    joblib.dump(xgb, 'vibu_model.joblib')
 
 with tabs[0]: #Nathan
 
@@ -849,7 +917,42 @@ with tabs[0]: #Nathan
 
     map_placeholder = st.empty()
         
+unique_location_ids = X_final_scaled['LOCATION_ID'].unique()
+testing=session.sql('SELECT * FROM TRUCK')
+# Create a list to store the tables data
+table_data = []
+# Create a DataFrame to store the table data
+df_unique_locations_lat_long = pd.DataFrame(columns=["Location ID", "Latitude", "Longitude"])
+public_holidays = [
+    {'Month': 7, 'Day': 4, 'DOW': None, 'WOM': None},  # 4th of July
+    {'Month': 12, 'Day': 24, 'DOW': None, 'WOM': None},  # Christmas Eve
+    {'Month': 12, 'Day': 25, 'DOW': None, 'WOM': None},  # Christmas Day
+    {'Month': 10, 'Day': None, 'DOW': '0', 'WOM': 2},  # Columbus Day (second Monday in October)
+    {'Month': 6, 'Day': 19, 'DOW': None, 'WOM': None},  # Juneteenth
+    {'Month': 9, 'Day': None, 'DOW': '0', 'WOM': 1},  # Labor Day (first Monday in September)
+    {'Month': 1, 'Day': None, 'DOW': '0', 'WOM': 3},  # Martin Luther King, Jr. Day (third Monday in January)
+    {'Month': 5, 'Day': None, 'DOW': '0', 'WOM': -1},  # Memorial Day (last Monday in May)
+    {'Month': 1, 'Day': 1, 'DOW': None, 'WOM': None},  # New Year's Day
+    {'Month': 12, 'Day': 31, 'DOW': None, 'WOM': None},  # New Year's Eve
+    {'Month': 11, 'Day': None, 'DOW': '3', 'WOM': 4},  # Thanksgiving Day (fourth Thursday in November)
+    {'Month': 11, 'Day': None, 'DOW': '2', 'WOM': 4},  # Thanksgiving Eve (fourth Wednesday in November)
+    {'Month': 2, 'Day': 14, 'DOW': None, 'WOM': None},  # Valentine's Day
+    {'Month': 11, 'Day': 11, 'DOW': None, 'WOM': None},  # Veterans Day
+    {'Month': 10, 'Day': 31, 'DOW': None, 'WOM': None},  # Halloween
+    {'Month': 3, 'Day': 17, 'DOW': None, 'WOM': None},  # St. Patrick's Day
+    {'Month': 11, 'Day': 25, 'DOW': '4', 'WOM': None},  # Black Friday
+    {'Month': 12, 'Day': 26, 'DOW': None, 'WOM': None},  # Boxing Day
+]
 
+# Iterate over each unique location ID
+for location_id in unique_location_ids:
+    location = X_final_scaled[X_final_scaled['LOCATION_ID'] == location_id]
+    latitude = location['LAT'].values[0]
+    longitude = location['LONG'].values[0]
+    df_unique_locations_lat_long = pd.concat([df_unique_locations_lat_long, pd.DataFrame({"Location ID": [location_id],
+                                                  "Latitude": [latitude],
+                                                  "Longitude": [longitude]})],
+                         ignore_index=True)
 with tabs[2]: #javier
     X_final_scaled=load_x_final_scaled()
     sales_pred=load_sales_pred()
@@ -2355,7 +2458,7 @@ with tabs[4]: #Tran Huy Minh S10223485H Tab Revenue Forecasting & Model Performa
         except Exception as e:
             print(f"An error occurred while processing the data: {e}")
 
-        selected_model = st.selectbox("Select a ML Model to see Performance", ['Old Asg2 Model', 'Updated Asg2 Model (Fixed)', 'Improved Asg3 Model (Main)'])
+        selected_model = st.selectbox("Select a ML Model to see Performance", ['Old Asg2 Model', 'Updated Asg2 Model (Fixed)', 'Improved Asg3 Model (Main)','Javier Model','Ayrton Model','Minh Model','Nathan Model','Vibu Model'])
         try:
             # Create a button to show feature importance and performance
             if st.button('Show Model Performance'):
@@ -2367,7 +2470,7 @@ with tabs[4]: #Tran Huy Minh S10223485H Tab Revenue Forecasting & Model Performa
 
                 if selected_model == 'Old Asg2 Model':
                     try:
-                        model_per = model
+                        model_per = old_model
                     except Exception as e:
                             print(f"An error occurred while loading the model from the file: {e}")
                     # Winsorize the target and some features to reduce the impact of outliers
@@ -2386,12 +2489,47 @@ with tabs[4]: #Tran Huy Minh S10223485H Tab Revenue Forecasting & Model Performa
                     X_final_scaled = X_final_scaled.loc[~outliers_IV]
                     outliers_IV = np.where(X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'] >0.7, True, np.where(X_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'] < -0.7, True, False))
                     X_final_scaled = X_final_scaled.loc[~outliers_IV]
-
-                else:
+                elif selected_model == 'Ayrton Model':
+                    try:
+                        model_per = ayrton_model
+                    except Exception as e:
+                            print(f"An error occurred while loading the model from the file: {e}")
+                    #Trimming Outliers for Holdout Graph
+                    X_final_scaled = trim_outliers(X_final_scaled, 'Revenue')
+                elif selected_model == 'Javier Model':
+                    try:
+                        model_per = javier_model
+                    except Exception as e:
+                            print(f"An error occurred while loading the model from the file: {e}")
+                    #Trimming Outliers for Holdout Graph
+                    X_final_scaled = trim_outliers(X_final_scaled, 'Revenue')
+                elif selected_model == 'Minh Model':
+                    try:
+                        model_per = minh_model
+                    except Exception as e:
+                            print(f"An error occurred while loading the model from the file: {e}")
+                    #Trimming Outliers for Holdout Graph
+                    X_final_scaled = trim_outliers(X_final_scaled, 'Revenue')
+                elif selected_model == 'Nathan Model':
+                    try:
+                        model_per = nathan_model
+                    except Exception as e:
+                            print(f"An error occurred while loading the model from the file: {e}")
+                    #Trimming Outliers for Holdout Graph
+                    X_final_scaled = trim_outliers(X_final_scaled, 'Revenue')
+                elif selected_model == 'Vibu Model':
+                    try:
+                        model_per = vibu_model
+                    except Exception as e:
+                            print(f"An error occurred while loading the model from the file: {e}")
+                    #Trimming Outliers for Holdout Graph
+                    X_final_scaled = trim_outliers(X_final_scaled, 'Revenue')
+                elif selected_model == 'Improved Asg3 Model (Main)':
                     try:
                         model_per = model
                     except Exception as e:
                             print(f"An error occurred while loading the model from the file: {e}")
+                        X_final_scaled = trim_outliers(X_final_scaled, 'Revenue')
     
                 # Split the dataset into features (X) and target (y)
                 X = X_final_scaled.drop("Revenue", axis=1)
@@ -2423,7 +2561,10 @@ with tabs[4]: #Tran Huy Minh S10223485H Tab Revenue Forecasting & Model Performa
                 mae = mean_absolute_error(y_true, y_pred)
                 mse = mean_squared_error(y_true, y_pred)
                 rmse = mean_squared_error(y_true, y_pred, squared=False)
-                r2 = r2_score(y_true, y_pred)
+                if selected_model == 'Minh Model':
+                    r2 = r2_score(np.expm1(y_true), np.expm1(y_pred))
+                else:
+                    r2 = r2_score(y_true, y_pred)
     
                 # Display the performance metrics
                 st.subheader('Model Performance on Holdout data')
