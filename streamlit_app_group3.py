@@ -25,7 +25,7 @@ from streamlit_javascript import st_javascript
 st.set_page_config(layout="wide")
 
 #Loading model and data
-model=joblib.load('best_new_model_compressed.joblib')
+model=joblib.load('model.joblib')
 old_model=joblib.load('model.joblib')
 old_updated_model=joblib.load('updated_old_model.joblib')
 connection_parameters = { "account": 'hiioykl-ix77996',"user": 'JAVIER',"password": '02B289223r04', "role": "ACCOUNTADMIN","database": "FROSTBYTE_TASTY_BYTES","warehouse": "COMPUTE_WH"}
