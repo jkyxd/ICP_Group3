@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 from datetime import timedelta
 import math
+import plotly.graph_objects as go
 
 import folium
 from streamlit_folium import st_folium
@@ -1181,7 +1182,250 @@ with tabs[2]: #javier
     
 
 with tabs[3]: #Aryton
-    print('Aryton')
+    
+    def load_map():
+    
+        # Create an empty list to store the rows
+        locationlist = []
+    
+        if len(df_selected_loc) == 0:
+            for index, row in df_loc.iterrows():
+                # Create a dictionary to store the row values
+                temp = [row['LOCATION_ID'], row['LAT'], row['LONG']]
+                # Append the row dictionary to the list
+                locationlist.append(temp)
+        else:
+            for index, row in df_selected_loc.iterrows():
+                # Create a dictionary to store the row values
+                temp = [row['LOCATION_ID'], row['LAT'], row['LONG']]
+                # Append the row dictionary to the list
+                locationlist.append(temp)
+    
+    
+        if 27 in truck_id or 28 in truck_id:
+            if current_loc == 'Yes':
+                DEFAULT_LATITUDE = 39.750
+                DEFAULT_LONGITUDE = -104.991
+                zoom = 15
+                curr_coords = [DEFAULT_LATITUDE, DEFAULT_LONGITUDE]
+            else: 
+                DEFAULT_LATITUDE = 39.732266
+                DEFAULT_LONGITUDE = -104.966468
+                zoom = 10
+    
+        elif 43 in truck_id or 44 in truck_id:
+            if current_loc == 'Yes':
+                DEFAULT_LATITUDE = 47.541
+                DEFAULT_LONGITUDE = -122.345
+                zoom = 13
+                curr_coords = [DEFAULT_LATITUDE, DEFAULT_LONGITUDE]
+    
+            else: 
+                DEFAULT_LATITUDE = 47.521137
+                DEFAULT_LONGITUDE = -122.335267
+                zoom = 10
+    
+    
+        elif 46 in truck_id or 47 in truck_id:
+            if current_loc == 'Yes':
+                DEFAULT_LATITUDE = 42.340
+                DEFAULT_LONGITUDE = -71.083
+                zoom = 15
+                curr_coords = [DEFAULT_LATITUDE, DEFAULT_LONGITUDE]
+    
+            else: 
+                DEFAULT_LATITUDE = 42.337187
+                DEFAULT_LONGITUDE = -71.071033
+                zoom = 11
+    
+            
+    
+    
+        #map
+            
+        m = folium.Map(location=[DEFAULT_LATITUDE, DEFAULT_LONGITUDE], zoom_start=zoom)
+    
+        # Iterate over the locationlist
+        for point in range(0, len(locationlist)):
+            # Get the latitude and longitude values
+            loc_id = locationlist[point][0]
+            selected_latitude = locationlist[point][1]
+            selected_longitude = locationlist[point][2]
+    
+            # Create the popup content with the latitude and longitude
+            popup_content = f"Location ID: {loc_id}, Latitude: {selected_latitude}, Longitude: {selected_longitude}"
+            popup = folium.Popup(popup_content, max_width=150)
+            coords = (locationlist[point][1], locationlist[point][2])
+            # Create a marker with the popup
+            marker = folium.Marker(coords, popup=popup)
+            marker.add_to(m)
+    
+        if current_loc == 'Yes':
+            # Create the popup content
+            popup_content = f"YOU ARE HERE!"
+            popup = folium.Popup(popup_content, max_width=100, sticky=True)
+    
+            # Create a marker with the popup
+            marker_icon = folium.Icon(color='red', icon='circle')
+            marker = folium.Marker(curr_coords, popup=popup, icon=marker_icon)
+            marker.add_to(m)
+    
+            folium.Circle(
+                location=curr_coords,
+                radius=1000,  # 1km in meters
+                color='red',
+                fill=False
+            ).add_to(m)
+    
+        f_map = st_folium(m, width=725)
+        return df_loc
+    
+    def get_inputs():
+    
+        #DELETE LATER
+        #truck_id = [27]
+        #selected_loc_id = [14808, 14806, 3447]
+        #hour = 8
+    
+    
+        lat_input = []
+        long_input = []
+        #loc_input = selected_loc_id * len(truck_id)
+        #truckid_input = [id for id in truck_id for _ in range(len(selected_loc_id))]
+    
+        for loc in selected_loc_id:
+            temp = df_loc[df_loc['LOCATION_ID']==loc]
+            lat = temp['LAT'].iloc[0]
+            long = temp['LONG'].iloc[0]
+            lat_input.append(lat)
+            long_input.append(long)
+    
+        #lat_input = lat_temp * len(truck_id)
+        #long_input = long_temp * len(truck_id)
+    
+    
+        input_df = pd.DataFrame({'TRUCK_ID': truck_id*len(selected_loc_id),'LOCATION_ID': selected_loc_id, 'LAT': lat_input, 'LONG': long_input})
+        date = '2020-8-25'
+        input_df['DATE'] = date
+        date_dt = pd.to_datetime(input_df['DATE'])
+        input_df.drop(columns='DATE', inplace = True)
+        input_df['MONTH'] = date_dt.dt.month
+        input_df['DOW'] = date_dt.dt.weekday
+        input_df['DAY'] = date_dt.dt.day
+        input_df['HOUR'] = hour
+    
+    
+        #get public holiday column
+        country_code = 'US'  # Replace with the appropriate country code
+        holiday_list = holidays.CountryHoliday(country_code)
+    
+        # Create a new column "PUBLIC_HOLIDAY" and set initial values to 0
+        input_df['PUBLIC_HOLIDAY'] = 0
+    
+        # Check if the date is a public holiday
+        if date in holiday_list:
+            # Set the value of "PUBLIC_HOLIDAY" to 1 if it is a public holiday
+            input_df['PUBLIC_HOLIDAY'] = 1
+        
+        #get lat & long based on loc_id user input
+        #temp = df_selected_loc[df_loc['LOCATION_ID']==loc_id]
+        #input_df['LAT'] = temp['LAT']
+        #input_df['LONG'] = temp['LONG']
+        #input_df['LOCATION_ID'] = loc_id
+        input_df['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'] = x_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].mean()
+        input_df['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'] = x_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].mean()
+    
+    
+    
+        #get encoded features
+        month = input_df['MONTH'].iloc[0]
+        #year = str(input_df['YEAR'].iloc[0])
+        current_df = x_final_scaled[(x_final_scaled['TRUCK_ID'].isin(truck_id)) & (x_final_scaled['MONTH'] == month)] #& (x_final_scaled['YEAR'] == year)
+        encoded_X = current_df[['TRUCK_ID','MENU_TYPE_GYROS_ENCODED', 'MENU_TYPE_CREPES_ENCODED', 'MENU_TYPE_BBQ_ENCODED', 'MENU_TYPE_SANDWICHES_ENCODED', 'MENU_TYPE_Mac & Cheese_encoded', 'MENU_TYPE_POUTINE_ENCODED', 'MENU_TYPE_ETHIOPIAN_ENCODED', 'MENU_TYPE_TACOS_ENCODED', 'MENU_TYPE_Ice Cream_encoded', 'MENU_TYPE_Hot Dogs_encoded', 'MENU_TYPE_CHINESE_ENCODED', 'MENU_TYPE_Grilled Cheese_encoded', 'MENU_TYPE_VEGETARIAN_ENCODED', 'MENU_TYPE_INDIAN_ENCODED', 'MENU_TYPE_RAMEN_ENCODED', 'CITY_SEATTLE_ENCODED', 'CITY_DENVER_ENCODED', 'CITY_San Mateo_encoded', 'CITY_New York City_encoded', 'CITY_BOSTON_ENCODED', 'REGION_NY_ENCODED', 'REGION_MA_ENCODED', 'REGION_CO_ENCODED', 'REGION_WA_ENCODED', 'REGION_CA_ENCODED']].drop_duplicates()
+        input_df = pd.merge(input_df, encoded_X,  how='left', left_on=['TRUCK_ID'], right_on =['TRUCK_ID']).drop_duplicates()
+        sum_X = current_df[['TRUCK_ID','MONTH','HOUR','DAY','SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE', 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE']]
+        input_df = pd.merge(input_df, sum_X,  how='left', left_on=['TRUCK_ID','HOUR','MONTH','DAY'], right_on =['TRUCK_ID','HOUR','MONTH','DAY']).drop_duplicates()
+        input_df.drop(columns = ['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE_y', 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE_y'], inplace = True)
+        input_df = input_df.rename(columns={'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE_x': 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'})
+        input_df = input_df.rename(columns={'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE_x': 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'})
+    
+        input_df.drop_duplicates(inplace=True)
+    
+        #GET WEATHER DATA
+        wdf=session.sql("Select * from ANALYTICS.WEATHER_DATA_API")
+        wdf=wdf.withColumn("H",F.substring(wdf["TIME"], 12, 2).cast("integer"))
+        wdf=wdf.withColumn("DATE",F.substring(wdf["TIME"], 0, 10))
+        wdf=wdf.select("WEATHERCODE","LOCATION_ID","H","DATE" )
+        wdf=wdf.to_pandas() 
+        wdf['MONTH'] = wdf['DATE'].apply(lambda x: x[5:7]).astype(int)
+        wdf[['LOCATION_ID', 'H']] = wdf[['LOCATION_ID', 'H']].astype(str)
+    
+        weather_input = []
+    
+        for loc in selected_loc_id:
+            filtered_wdf = wdf[(wdf['LOCATION_ID']== str(loc)) & (wdf['H']==str(hour)) & (wdf['MONTH']==month)]
+            #CHECK WHAT IS THE MOST PROBABLE WEATHER BASED ON MONTH HOUR AND LOCATION
+            filtered_wdf['WEATHERCODE'].value_counts()
+            #GET MOST COMMON WEATHERCODE
+            weathercode = filtered_wdf['WEATHERCODE'].value_counts().idxmax()
+            weather_input.append(weathercode)
+    
+        input_df['WEATHERCODE'] = weather_input
+    
+        #rearrange columns
+        input_final = input_df[['TRUCK_ID', 'MONTH', 'HOUR', 'DOW', 'DAY', 'PUBLIC_HOLIDAY', 'LAT', 'LONG', 'LOCATION_ID', 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE', 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE', 'WEATHERCODE', 'MENU_TYPE_GYROS_ENCODED', 'MENU_TYPE_CREPES_ENCODED', 'MENU_TYPE_BBQ_ENCODED', 'MENU_TYPE_SANDWICHES_ENCODED', 'MENU_TYPE_Mac & Cheese_encoded', 'MENU_TYPE_POUTINE_ENCODED', 'MENU_TYPE_ETHIOPIAN_ENCODED', 'MENU_TYPE_TACOS_ENCODED', 'MENU_TYPE_Ice Cream_encoded', 'MENU_TYPE_Hot Dogs_encoded', 'MENU_TYPE_CHINESE_ENCODED', 'MENU_TYPE_Grilled Cheese_encoded', 'MENU_TYPE_VEGETARIAN_ENCODED', 'MENU_TYPE_INDIAN_ENCODED', 'MENU_TYPE_RAMEN_ENCODED', 'CITY_SEATTLE_ENCODED', 'CITY_DENVER_ENCODED', 'CITY_San Mateo_encoded', 'CITY_New York City_encoded', 'CITY_BOSTON_ENCODED', 'REGION_NY_ENCODED', 'REGION_MA_ENCODED', 'REGION_CO_ENCODED', 'REGION_WA_ENCODED', 'REGION_CA_ENCODED']]
+    
+        #make prediction
+        model = joblib.load('model.joblib')
+        prediction = model.predict(input_final)
+        input_final['PREDICTED'] = prediction
+        results = input_final[['TRUCK_ID', 'LOCATION_ID', 'HOUR', 'PREDICTED']]
+    
+        return results
+    
+    
+    connection_parameters = { "account": 'hiioykl-ix77996',"user": 'AYRTON',"password": 'Arron19*', "role": "ACCOUNTADMIN","database": "FROSTBYTE_TASTY_BYTES","warehouse": "COMPUTE_WH"}
+    session = Session.builder.configs(connection_parameters).create()
+    
+    #tab headers
+    st.title('Compare sales by location and hour')
+    st.write('''###### This tab allows you to predict and visualise the sales for the specified location and hour''')
+    
+    truck_id = st.selectbox('Select Truck ID to view the locations available to you:', [27, 28, 43, 44, 46, 47])
+    truck_id = [truck_id]
+    current_loc = st.selectbox("Go to your current location? ***(SHOWN AS RED MARKER ON MAP)***", ("Yes", "No"))
+    
+    #get x_final_scaled
+    x_final_scaled = pd.read_csv('x_final_scaled.csv')
+    df_loc = x_final_scaled[['LOCATION_ID', 'LAT', 'LONG', 'TRUCK_ID']]
+    df_loc.drop_duplicates(inplace=True)
+    all_loc_list = df_loc['LOCATION_ID'].unique().tolist()
+    df_selected_loc =  df_loc[df_loc['TRUCK_ID'].isin(truck_id)]
+    selected_loc_list = df_selected_loc['LOCATION_ID'].unique().tolist()
+    
+    load_map()
+    
+    
+    st.subheader('User Input Parameters')
+    
+    #slider for hour of day
+    hour = st.slider('Select the hour of the day to predict sales for location(s):', 8,23,13)
+    #input loc id
+    selected_loc_id = st.multiselect('Select location(s) for sales prediction:', selected_loc_list)
+    
+    
+    if st.button('Predict'):
+        results = get_inputs() #input in df form
+        # Round off the predicted values to 2 decimal places
+        results = results.sort_values('PREDICTED', ascending=False)
+        results["LOCATION_ID"] = results["LOCATION_ID"].astype(str)
+    
+        fig = px.bar(results, y='PREDICTED', x='LOCATION_ID', text_auto='.2f', title="Predicted sales for each location for hour {}".format(hour))
+        
+        fig.update_xaxes(type='category')
+    
+        # Display the bar chart using st.plotly_chart
+        st.plotly_chart(fig)
 
 
    
