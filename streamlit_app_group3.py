@@ -2529,7 +2529,7 @@ with tabs[4]: #Tran Huy Minh S10223485H Tab Revenue Forecasting & Model Performa
                         model_per = model
                     except Exception as e:
                             print(f"An error occurred while loading the model from the file: {e}")
-                        X_final_scaled = trim_outliers(X_final_scaled, 'Revenue')
+                    X_final_scaled = trim_outliers(X_final_scaled, 'Revenue')
     
                 # Split the dataset into features (X) and target (y)
                 X = X_final_scaled.drop("Revenue", axis=1)
