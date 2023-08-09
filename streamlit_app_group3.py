@@ -182,6 +182,475 @@ with tabs[0]: #Nathan
     #ors client
     ors_client = ors.Client(key='5b3ce3597851110001cf624817eb9bc1474c4917b9dda7114d579034')
     
+    
+    def generate_date_data(df,datetime_object):
+        df['date'] = pd.to_datetime(datetime_object)
+        df['MONTH'] = df['date'].dt.month
+        df['DOW'] = df['date'].dt.weekday
+        df['DAY'] = df['date'].dt.day
+        df['WOM'] = (df['DAY'] - 1) // 7 + 1
+        df['YEAR'] = df['date'].dt.year
+
+        public_holidays = [
+        {'Month': 7, 'Day': 4, 'DOW': None, 'WOM': None},  # 4th of July
+        {'Month': 12, 'Day': 24, 'DOW': None, 'WOM': None},  # Christmas Eve
+        {'Month': 12, 'Day': 25, 'DOW': None, 'WOM': None},  # Christmas Day
+        {'Month': 10, 'Day': None, 'DOW': '0', 'WOM': 2},  # Columbus Day (second Monday in October)
+        {'Month': 6, 'Day': 19, 'DOW': None, 'WOM': None},  # Juneteenth
+        {'Month': 9, 'Day': None, 'DOW': '0', 'WOM': 1},  # Labor Day (first Monday in September)
+        {'Month': 1, 'Day': None, 'DOW': '0', 'WOM': 3},  # Martin Luther King, Jr. Day (third Monday in January)
+        {'Month': 5, 'Day': None, 'DOW': '0', 'WOM': -1},  # Memorial Day (last Monday in May)
+        {'Month': 1, 'Day': 1, 'DOW': None, 'WOM': None},  # New Year's Day
+        {'Month': 12, 'Day': 31, 'DOW': None, 'WOM': None},  # New Year's Eve
+        {'Month': 11, 'Day': None, 'DOW': '3', 'WOM': 4},  # Thanksgiving Day (fourth Thursday in November)
+        {'Month': 11, 'Day': None, 'DOW': '2', 'WOM': 4},  # Thanksgiving Eve (fourth Wednesday in November)
+        {'Month': 2, 'Day': 14, 'DOW': None, 'WOM': None},  # Valentine's Day
+        {'Month': 11, 'Day': 11, 'DOW': None, 'WOM': None},  # Veterans Day
+        {'Month': 10, 'Day': 31, 'DOW': None, 'WOM': None},  # Halloween
+        {'Month': 3, 'Day': 17, 'DOW': None, 'WOM': None},  # St. Patrick's Day
+        {'Month': 11, 'Day': 25, 'DOW': '4', 'WOM': None},  # Black Friday
+        {'Month': 12, 'Day': 26, 'DOW': None, 'WOM': None},  # Boxing Day
+        ]
+
+    # Iterate over the public holidays and create the 'public_holiday' column
+        df['PUBLIC_HOLIDAY'] = 0  # Initialize the column with 0 (not a public holiday)
+        for holiday in public_holidays:
+            month_mask = df['date'].dt.month == holiday['Month']
+            day_mask = df['date'].dt.day == holiday['Day']
+            dow_mask = df['date'].dt.dayofweek == int(holiday['DOW']) if holiday['DOW'] is not None else True
+            wom_mask = (df['date'].dt.day - 1) // 7 + 1 == holiday['WOM'] if holiday['WOM'] is not None else True
+
+            mask = month_mask & day_mask & dow_mask & wom_mask
+            df.loc[mask, 'PUBLIC_HOLIDAY'] = 1
+        return df
+    def calculate_list_and_mod(row):
+        working_hours = row['working_hour']
+        num_locs = row['Num_of_locs']
+        each_loc_hours = working_hours // num_locs
+        remainder = working_hours % num_locs
+        result_list = [each_loc_hours] * num_locs
+        for i in range(remainder):
+            result_list[i] += 1
+        return result_list
+
+    def calculate_start_time(row):
+        result_list=row["shift_hours"]
+        num_locs = row['Num_of_locs']
+        start_times = [row['Starting_Hour']]
+        for i in range(1, num_locs):
+            start_times.append(start_times[-1] + result_list[i - 1])
+
+        start_times.append(row["Ending_Hour"])
+
+        return start_times
+
+    def calculate_next_start_time(start_times, current_hour):
+        if current_hour not in start_times:
+            return None
+        index = start_times.index(current_hour) + 1
+        if index == len(start_times):
+            return None
+        return start_times[index]
+
+    def haversine_distance(lat1, lon1, lat2, lon2):
+            # Convert latitude and longitude from degrees to radians
+            lat1_rad = math.radians(lat1)
+            lon1_rad = math.radians(lon1)
+            lat2_rad = math.radians(lat2)
+            lon2_rad = math.radians(lon2)
+
+            # Haversine formula
+            dlon = lon2_rad - lon1_rad
+            dlat = lat2_rad - lat1_rad
+            a = math.sin(dlat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon/2)**2
+            c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+            distance = 6371 * c  # Radius of the Earth in kilometers
+            return distance
+        
+    def filter_list(current_loc,available_locations, distance_param):
+    
+        current_lat=route_df[route_df["LOCATION_ID"]==current_loc]["LAT"].values[0]
+        
+        current_long=route_df[route_df["LOCATION_ID"]==current_loc]["LONG"].values[0]
+        
+        new_list=[]
+        for i in available_locations:
+            lat=route_df[route_df["LOCATION_ID"]==i]["LAT"].values[0]
+            long=route_df[route_df["LOCATION_ID"]==i]["LONG"].values[0]
+        
+            distance=haversine_distance(current_lat, current_long, lat, long)
+        
+            if distance_param >= distance:
+            
+                new_list.append(i)
+        return new_list 
+
+    def algo_csv(date):
+        
+    
+    ## Generating the prediction data, for all location by all truck by eash hour
+        truck_cols=['TRUCK_ID','MENU_TYPE_GYROS_ENCODED', 'MENU_TYPE_CREPES_ENCODED',
+        'MENU_TYPE_BBQ_ENCODED', 'MENU_TYPE_SANDWICHES_ENCODED',
+        'MENU_TYPE_Mac & Cheese_encoded', 'MENU_TYPE_POUTINE_ENCODED',
+        'MENU_TYPE_ETHIOPIAN_ENCODED', 'MENU_TYPE_TACOS_ENCODED',
+        'MENU_TYPE_Ice Cream_encoded', 'MENU_TYPE_Hot Dogs_encoded',
+        'MENU_TYPE_CHINESE_ENCODED', 'MENU_TYPE_Grilled Cheese_encoded',
+        'MENU_TYPE_VEGETARIAN_ENCODED', 'MENU_TYPE_INDIAN_ENCODED',
+        'MENU_TYPE_RAMEN_ENCODED']
+        location_cols=[ 'CITY_SEATTLE_ENCODED',
+        'CITY_DENVER_ENCODED', 'CITY_San Mateo_encoded',
+        'CITY_New York City_encoded', 'CITY_BOSTON_ENCODED',
+        'REGION_NY_ENCODED', 'REGION_MA_ENCODED', 'REGION_CO_ENCODED',
+        'REGION_WA_ENCODED', 'REGION_CA_ENCODED', 'LAT', 'LONG', 'LOCATION_ID']
+        
+        datetime_object = datetime.strptime(date, '%Y-%m-%d')
+        df = pd.DataFrame()
+
+        df=ml_df[location_cols].drop_duplicates()
+
+        df=generate_date_data(df,datetime_object)
+
+
+        hours = list(range(24))
+        df['HOUR'] = df.apply(lambda row: hours, axis=1)
+        df=df.explode('HOUR', ignore_index=True)
+        
+        
+        truck_manager_table = session.table('RAW_POS."TRUCK_FRANCHISE"').to_pandas()
+        algo_table = session.table('ROUTING."ALGO_DATA(With Year)"')
+        algo_df = algo_table.to_pandas()
+        df_drop=algo_df.drop("YEAR",axis=1)
+        final_df=df_drop.drop("SUM(ORDER_TOTAL)",axis=1)
+        Sales_Forecast_Training_Data_row=session.table('ANALYTICS."Sales_Forecast_Training_Data"')
+        Sales_Forecast_Training_Data_df = Sales_Forecast_Training_Data_row.to_pandas()
+        ml_df=final_df[list(Sales_Forecast_Training_Data_df.drop("Profit",axis=1).columns)]
+        
+        
+        trc_df = pd.DataFrame()
+        trc_df=ml_df[truck_cols].drop_duplicates()
+        trc_df=generate_date_data(trc_df,datetime_object)
+        
+        trc_df.drop(["MONTH","DOW","DAY","WOM","YEAR","PUBLIC_HOLIDAY"],axis=1,inplace=True)
+        merge_df=pd.merge(df, trc_df, how='inner', on="date") 
+        query = 'SELECT * FROM "weadf_trend" WHERE DATE = \'{}\''.format(date)
+        wdf=session.sql("Select * from ANALYTICS.WEATHER_DATA_API")
+
+        wdf=wdf.withColumn("H",F.substring(wdf["TIME"], 12, 2).cast("integer"))
+
+        wdf=wdf.withColumn("DATE",F.substring(wdf["TIME"], 0, 10))
+
+        wdf=wdf.select("WEATHERCODE","LOCATION_ID","H","DATE" ).to_pandas()
+
+        wdf['DATE'] = pd.to_datetime(wdf['DATE'])
+
+        wdf.rename(columns = {'H':'HOUR'}, inplace = True)
+
+        weadf = pd.merge(wdf, merge_df, right_on=['LOCATION_ID','date',"HOUR"], left_on=['LOCATION_ID','DATE',"HOUR"])
+        weadf = weadf.drop(['date'], axis=1)
+        weadf = weadf.drop(['WOM'], axis=1)
+        
+        latest_date = {'YEAR': 2022.0, 'MONTH': 10.0, 'DAY': 30.0}
+
+    # Calculate the date 1 year before the latest date
+        one_year_before = {'YEAR': latest_date['YEAR'] - 1, 'MONTH': latest_date['MONTH'], 'DAY': latest_date['DAY']}
+
+    # Filter the DataFrame to exclude data within the last year
+        holdout_df_year = algo_df[(algo_df['YEAR'] < one_year_before['YEAR']) | 
+                        (algo_df['YEAR'] == one_year_before['YEAR']) & (algo_df['MONTH'] < one_year_before['MONTH']) |
+                        (algo_df['YEAR'] == one_year_before['YEAR']) & (algo_df['MONTH'] == one_year_before['MONTH']) & (algo_df['DAY'] <= one_year_before['DAY'])]
+
+        X_final_scaled = holdout_df_year.copy()
+    #Add date column
+        X_final_scaled.rename(columns={"SUM(ORDER_TOTAL)": "Revenue"},inplace=True)
+        X_final_scaled['Date'] = pd.to_datetime(X_final_scaled[['YEAR', 'MONTH', 'DAY']])
+
+        X_final_scaled.rename(columns = {'Date':'DATE'}, inplace = True)
+        X_final_scaled_revenue = X_final_scaled.copy()
+        X_final_scaled = X_final_scaled.drop(['Revenue'], axis=1)
+        X_final_scaled.info()
+
+
+        df1_columns = set(X_final_scaled.columns)
+        df2_columns = set(weadf.columns)
+
+        columns_only_in_df1 = df1_columns - df2_columns
+        columns_only_in_df2 = df2_columns - df1_columns
+
+        print("Columns only in df1:", columns_only_in_df1)
+        print("Columns only in df2:", columns_only_in_df2)
+
+
+        merged_df = X_final_scaled.merge(weadf, on=['CITY_BOSTON_ENCODED',
+        'CITY_DENVER_ENCODED',
+        'CITY_New York City_encoded',
+        'CITY_SEATTLE_ENCODED',
+        'CITY_San Mateo_encoded',
+        'DATE',
+        'DAY',
+        'DOW',
+        'HOUR',
+        'LAT',
+        'LOCATION_ID',
+        'LONG',
+        'MENU_TYPE_BBQ_ENCODED',
+        'MENU_TYPE_CHINESE_ENCODED',
+        'MENU_TYPE_CREPES_ENCODED',
+        'MENU_TYPE_ETHIOPIAN_ENCODED',
+        'MENU_TYPE_GYROS_ENCODED',
+        'MENU_TYPE_Grilled Cheese_encoded',
+        'MENU_TYPE_Hot Dogs_encoded',
+        'MENU_TYPE_INDIAN_ENCODED',
+        'MENU_TYPE_Ice Cream_encoded',
+        'MENU_TYPE_Mac & Cheese_encoded',
+        'MENU_TYPE_POUTINE_ENCODED',
+        'MENU_TYPE_RAMEN_ENCODED',
+        'MENU_TYPE_SANDWICHES_ENCODED',
+        'MENU_TYPE_TACOS_ENCODED',
+        'MENU_TYPE_VEGETARIAN_ENCODED',
+        'MONTH',
+        'PUBLIC_HOLIDAY',
+        'REGION_CA_ENCODED',
+        'REGION_CO_ENCODED',
+        'REGION_MA_ENCODED',
+        'REGION_NY_ENCODED',
+        'REGION_WA_ENCODED',
+        'TRUCK_ID',
+        'WEATHERCODE',
+        'YEAR'], how='outer')
+        
+        working_days = 6
+        truck_ids = [1,2,13,14,17,21,27, 28,33,34,35, 43, 44, 46, 47] 
+
+        start_date = datetime.strptime('2021-08-23', '%Y-%m-%d')
+        dates = [start_date + timedelta(days=i) for i in range(working_days)]
+
+        truck_data = []
+
+
+        for i in range(len(truck_ids)):
+            num_of_locs = random.randrange(2, 5)
+            each_location_travel_distance = random.randrange(8, 12)
+            max_total_travel_distance = each_location_travel_distance * num_of_locs
+
+            truck_data.append({
+            'Truck_ID': truck_ids[i],
+            'Date': '2021-08-23',
+            'Starting_Hour': random.randrange(8, 12),
+            'Ending_Hour': random.randrange(18, 24),
+            'Num_of_locs': num_of_locs,
+            'each_location_travel_distance': each_location_travel_distance,
+            'Max_Total_Travel_Distance': max_total_travel_distance
+        })
+
+        truck_df = pd.DataFrame(truck_data)
+        starting_locations = {}
+        
+        for truck in truck_ids:
+            truck_locations = X_final_scaled[X_final_scaled['TRUCK_ID'] == truck]['LOCATION_ID'].values
+            starting_location = truck_locations[0] if len(truck_locations) > 0 else None
+            starting_locations[truck] = starting_location
+
+        truck_df['Starting_Location'] = truck_df['Truck_ID'].map(starting_locations)    
+        
+        truck_id_to_impute = 35
+        imputed_location = 15098
+
+        truck_df[truck_df['Truck_ID'].isnull()]['Starting_Location'] = imputed_location
+        
+        truck_df["working_hour"]=truck_df['Ending_Hour']-truck_df['Starting_Hour']+1
+        truck_df["shift_hours"]=truck_df.apply(calculate_list_and_mod, axis=1)
+        truck_df["start_time"]=truck_df.apply(calculate_start_time, axis=1)
+        
+        date = '2021-8-23'
+        datetime_object = datetime.strptime(date, '%Y-%m-%d')
+
+        weekadd = timedelta(days=14)
+
+        two_week=datetime_object-weekadd
+
+        sql_string='select DAY,MONTH,YEAR,TRUCK_ID,"SUM(ORDER_TOTAL)" from ROUTING."ALGO_DATA(With Year)"\
+        where (DAY>={} and YEAR>={} and MONTH>={}) \
+        and (DAY<={} and YEAR<={} and MONTH<={})'.format(two_week.day,two_week.year,two_week.month,datetime_object.day,datetime_object.year,datetime_object.month)
+
+
+        full_sql='select Truck_ID,SUM("SUM(ORDER_TOTAL)") as Revenue from ({}) group by TRUCK_ID  having TRUCK_ID  in (1,2,13,14,17,21,27, 28,33,34,35, 43, 44, 46, 47)'.format(sql_string)
+
+
+        session.sql(full_sql).show()
+
+        past_2_weeks_rows = session.sql(full_sql).collect()
+        past_2_weeks_df = pd.DataFrame(past_2_weeks_rows)
+
+        past_2_weeks_df_sorted = past_2_weeks_df.sort_values(by='REVENUE', ascending=False)
+        past_2_weeks_df_sorted
+        
+        mean_revenue = past_2_weeks_df_sorted['REVENUE'].mean()
+        new_row = {'TRUCK_ID': 44, 'REVENUE': mean_revenue}
+        past_2_weeks_df_sorted = past_2_weeks_df_sorted.append(new_row, ignore_index=True)
+        new_row = {'TRUCK_ID': 34, 'REVENUE': mean_revenue}
+        past_2_weeks_df_sorted = past_2_weeks_df_sorted.append(new_row, ignore_index=True)
+        new_row = {'TRUCK_ID': 35, 'REVENUE': mean_revenue}
+        past_2_weeks_df_sorted = past_2_weeks_df_sorted.append(new_row, ignore_index=True)
+        past_2_weeks_df_sorted = past_2_weeks_df_sorted.sort_values(by='REVENUE', ascending=False)
+
+        mean_revenue = past_2_weeks_df_sorted['REVENUE'].mean()
+        
+        for i in list(past_2_weeks_df_sorted["TRUCK_ID"].values):
+            new_row = {'TRUCK_ID': i, 'REVENUE': mean_revenue}
+            past_2_weeks_df_sorted = past_2_weeks_df_sorted.append(new_row, ignore_index=True)
+            
+        truck_df = pd.merge(truck_df, past_2_weeks_df_sorted, left_on=['Truck_ID'], right_on=['TRUCK_ID'])
+        merged_df = merged_df.fillna({'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE':(merged_df['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].mean())})
+        merged_df = merged_df.fillna({ 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE':(merged_df['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].mean())})
+        predicted_df = merged_df[['TRUCK_ID', 'MONTH', 'HOUR', 'DOW', 'DAY', 'PUBLIC_HOLIDAY', 'LAT',
+        'LONG', 'LOCATION_ID', 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE',
+        'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE', 'WEATHERCODE',
+        'MENU_TYPE_GYROS_ENCODED', 'MENU_TYPE_CREPES_ENCODED',
+        'MENU_TYPE_BBQ_ENCODED', 'MENU_TYPE_SANDWICHES_ENCODED',
+        'MENU_TYPE_Mac & Cheese_encoded', 'MENU_TYPE_POUTINE_ENCODED',
+        'MENU_TYPE_ETHIOPIAN_ENCODED', 'MENU_TYPE_TACOS_ENCODED',
+        'MENU_TYPE_Ice Cream_encoded', 'MENU_TYPE_Hot Dogs_encoded',
+        'MENU_TYPE_CHINESE_ENCODED', 'MENU_TYPE_Grilled Cheese_encoded',
+        'MENU_TYPE_VEGETARIAN_ENCODED', 'MENU_TYPE_INDIAN_ENCODED',
+        'MENU_TYPE_RAMEN_ENCODED', 'CITY_SEATTLE_ENCODED',
+        'CITY_DENVER_ENCODED', 'CITY_San Mateo_encoded',
+        'CITY_New York City_encoded', 'CITY_BOSTON_ENCODED',
+        'REGION_NY_ENCODED', 'REGION_MA_ENCODED', 'REGION_CO_ENCODED',
+        'REGION_WA_ENCODED', 'REGION_CA_ENCODED']]
+        model = joblib.load(open('model.joblib',"rb"))
+        predicted_df["HOUR"]=predicted_df["HOUR"].astype(int)
+        predictions = model.predict(predicted_df)
+        predicted_df["predictions"]=predictions
+        
+        ## generate the 24hour grid
+        unique_location_ids = predicted_df['LOCATION_ID'].unique()
+
+        hourly_location_df = pd.DataFrame(columns=[str(hour) for hour in range(1, 25)])
+
+        for location_id in unique_location_ids:
+            row_data = {str(hour): 0 for hour in range(1, 25)}
+            hourly_location_df = hourly_location_df.append(row_data, ignore_index=True)
+
+        hourly_location_df['LOCATION_ID'] = unique_location_ids
+        hourly_location_df = hourly_location_df[['LOCATION_ID'] + [str(hour) for hour in range(1, 25)]]
+        route_df=predicted_df[["TRUCK_ID","LOCATION_ID","LAT","LONG","predictions","HOUR"]]
+        truck_df["current_location"]=None
+        truck_df["next_start_time"]=None
+        truck_df["location_visited"]=pd.Series([[]] * len(truck_df))
+        truck_df["predicted_earning"]=pd.Series([[]] * len(truck_df))
+        
+        truck_df_copy = truck_df.copy()
+        truck_df["current_location"]=truck_df["Starting_Location"]
+
+        # Iterate over each hour
+        for hour in range(24):
+        
+            trucks_starting_now = truck_df[truck_df['start_time'].apply(lambda start_times: hour in start_times)]
+            trucks_starting_now.sort_values(by='priority',ascending=True).reset_index(drop=True)
+    
+        
+            trucks_starting_now ['next_start_time'] =  trucks_starting_now ['start_time'].apply(lambda start_times: calculate_next_start_time(start_times,hour))
+        
+            available_locations = []
+            for index, truck in trucks_starting_now.iterrows():
+        
+        
+                current_hour = str(hour)
+            
+            
+                for loc_index, loc_row in  hourly_location_df.iterrows():
+                    if loc_row[current_hour]==0:
+                        available_locations.append(loc_row["LOCATION_ID"])
+                else:
+                    if loc_row[current_hour]==truck["Truck_ID"]:
+                        available_locations.append(loc_row["LOCATION_ID"])
+                        
+                        hourly_location_df.loc[hourly_location_df[current_hour]==truck["Truck_ID"],current_hour]=0
+                        
+                available_locations=list(dict.fromkeys(available_locations))
+        
+        
+            for index, truck in trucks_starting_now.iterrows():
+            
+            
+            ### ditance calculator
+            ## remove values from available_locatio based on distance
+            ##if u wan any other way also can
+                new_list=[]
+                if pd.notna(truck["current_location"]) :
+                    new_list=filter_list(truck["current_location"], available_locations, truck['each_location_travel_distance'])
+            
+                if pd.notna(truck['next_start_time']):
+                    route_df_h=route_df[(route_df["HOUR"]>=hour) & (route_df["HOUR"]<=  int(truck['next_start_time']))] 
+                
+                    route_df_truck=route_df_h[route_df_h["TRUCK_ID"]==truck["Truck_ID"]]
+                    route_df_loc=route_df_truck[route_df_truck["LOCATION_ID"].isin(new_list)]
+                
+                    if route_df_loc.size>0:
+                        
+                        route_df_grpby=route_df_loc.groupby("LOCATION_ID").sum()["predictions"]
+                
+                        location =  route_df_grpby.idxmax()
+            
+                
+                        truck_df.at[index,'current_location'] = location
+                        truck_df.at[index,'location_visited'] =   list(truck_df.at[index,'location_visited']) + [location]
+                        truck_df.at[index,'predicted_earning'] = list(truck_df.at[index,'predicted_earning']) + [route_df_grpby.max()]
+                    
+
+                        available_locations.remove(location)
+
+                    if pd.notna(truck['next_start_time']):
+                
+                        for i in range(hour,int(truck['next_start_time'])):
+            
+                            column=str(i)
+                            hourly_location_df.loc[hourly_location_df["LOCATION_ID"]==location,str(i)]=truck["Truck_ID"]  
+        
+        
+        
+        def get_lat_long(location_id):
+            row = algo_df[algo_df['LOCATION_ID'] == location_id]
+            if not row.empty:
+                return row['LAT'].values[0], row['LONG'].values[0]
+            return None, None
+
+    # Calculate the total distance traveled for each truck
+        total_distances = []
+        for _, row in truck_df.iterrows():
+            starting_location = row['Starting_Location']
+            location_visited = row['location_visited']
+        
+        total_distance = 0
+        prev_lat, prev_lon = get_lat_long(starting_location)  # Get the latitude and longitude of the starting location
+        
+        # Loop through each location in location_visited
+        for location_id in location_visited:
+            lat, lon = get_lat_long(location_id)
+            
+            # If latitude and longitude are found, calculate the distance between the two locations
+            if lat is not None and lon is not None:
+                total_distance += haversine_distance(prev_lat, prev_lon, lat, lon)
+            
+                # Update the previous location
+                prev_lat, prev_lon = lat, lon
+        
+        total_distances.append(total_distance)
+
+        # Add the total_distances list as a new column to the truck_df
+        truck_df['total_distance_traveled'] = total_distances
+        
+        truck_manager_table['Name'] = truck_manager_table['FIRST_NAME'] +' '+ truck_manager_table['LAST_NAME']
+        selected_truck_ids = [1,2,13,14,17,21,27,28,33,34,35,43,44,46,47] 
+        filtered_manager_table = truck_manager_table[truck_manager_table['TRUCK_ID'].isin(selected_truck_ids)].copy()
+
+        # Merge the 'truck_manager_table' DataFrame to get the names of truck managers
+        truck_manager_merged_df = truck_df.merge(filtered_manager_table[['TRUCK_ID', 'Name', 'TRUCK_PRIMARY_CITY']], on='TRUCK_ID', how='outer')
+        truck_manager_merged_df = truck_manager_merged_df.drop_duplicates('Truck_ID')
+        truck_manager_merged_df = truck_manager_merged_df.reset_index(drop=True)
+        truck_manager_merged_df = truck_manager_merged_df.rename(columns={'TRUCK_PRIMARY_CITY': 'City'})
+        truck_manager_merged_df.to_csv("truck_manager_merged_df.csv")
+
     # Define a function to get the route between two points using ORS
     def get_route(start_point, end_point):
             radius = 500  # 10 kilometers
@@ -228,7 +697,7 @@ with tabs[0]: #Nathan
                                 points.append([place_lat[i], place_lng[i]])
 
                         # Choose a different polyline color for each truck route
-                        colors = ['darkred', 'black', 'blue', 'orange', 'lightblue', 'lightgreen', 'purple', 'gray', 'white', 'cadetblue', 'darkgreen', 'pink', 'darkblue', 'lightgray', 'beige']
+                        colors = ['orange', 'black', 'blue', 'lightblue', 'darkred','lightgreen', 'purple', 'gray', 'white', 'cadetblue', 'darkgreen', 'pink', 'darkblue', 'lightgray', 'beige']
                         color_index = available_trucks.index(selected_truck_id)
                         polyline_color = colors[color_index % len(colors)]
 
@@ -361,7 +830,6 @@ with tabs[0]: #Nathan
     # Add a "Run Map" button
     with st.form("RunMapForm"):
             st.form_submit_button("Run Map")
-            
     
             if selected_truck_ids:
                     if selected_truck_ids != st.session_state.prev_selected_truck_ids:
@@ -370,6 +838,8 @@ with tabs[0]: #Nathan
                             st.success(f"Your selected Truck IDs {selected_truck_ids_str} have been saved!")
                             # Create the map and display truck routes
                             create_map(selected_truck_ids)
+                            for i in selected_truck_ids:
+                                st.session_state.prev_selected_truck_ids.append(selected_truck_ids[i])
                     else:
                             st.info("Selected truck IDs have not changed. The map has not been changed.")
                             create_map(selected_truck_ids)
@@ -377,8 +847,6 @@ with tabs[0]: #Nathan
                     st.info("No truck IDs have been selected.")
     
     map_placeholder = st.empty()
-
-
 
 
 
@@ -1660,15 +2128,12 @@ with tabs[2]: #javier
 
     
 
-
-
 with tabs[3]: #Aryton
     print('Aryton')
 
 
-    
    
-with tabs[1]: 
+with tabs[1]: #Vibu
     
     
     @st.cache_data
@@ -1886,18 +2351,18 @@ with tabs[1]:
     
     
     if 'truck_fiter' not in st.session_state:
-        st.session_state.truck_filter = None
+        st.session_state.truck_fiter = None
             
     with st.form("RunMapForm2"):
         st.form_submit_button("Run Map")
     
         if truck_filter:
             
-                if truck_filter != st.session_state.truck_filter:
+                if truck_filter != st.session_state.truck_fiter:
                             # Save the current selected truck IDs to session state
                     selected_truck_ids_str = truck_filter
                     st.success(f"Your selected Truck ID {selected_truck_ids_str} have been saved!")
-                    st.session_state.prev_selected_truck_ids = truck_filter
+                    st.session_state.truck_fiter = truck_filter
                             # Create the map and display truck routes
                     create_folium_map(data)
                 else:
