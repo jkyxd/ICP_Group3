@@ -25,14 +25,14 @@ from streamlit_javascript import st_javascript
 st.set_page_config(layout="wide")
 
 #Loading model and data
-ayrton_model=joblib.load('ayrton_model.joblib')
+#ayrton_model=joblib.load('ayrton_model.joblib')
 javier_model=joblib.load('javier_model.joblib')
-minh_model=joblib.load('minh_model.joblib')
-nathan_model=joblib.load('nathan_model.joblib')
-vibu_model=joblib.load('vibu_model.joblib')
+#minh_model=joblib.load('minh_model.joblib')
+#nathan_model=joblib.load('nathan_model.joblib')
+#vibu_model=joblib.load('vibu_model.joblib')
 old_updated_model=joblib.load('updated_old_model.joblib')
 old_model=joblib.load('model.joblib')
-model=joblib.load('javier_model.joblib')
+model=javier_model
 connection_parameters = { "account": 'hiioykl-ix77996',"user": 'JAVIER',"password": '02B289223r04', "role": "ACCOUNTADMIN","database": "FROSTBYTE_TASTY_BYTES","warehouse": "COMPUTE_WH"}
 
 session = Session.builder.configs(connection_parameters).create()
