@@ -32,7 +32,7 @@ jobs:
       - name: Commit and Push Changes
         run: |
           git config --local user.email "vibumy@gmail.com"
-          git config --local user.name "Github Actions"   
-          git add truck_manager_merged_df.csv"
+          git config --local user.name "Github Actions"
+          git add truck_manager_merged_df.csv
           git commit -m "updates routing"
           git push 
