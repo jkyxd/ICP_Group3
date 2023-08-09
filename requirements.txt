@@ -1,0 +1,16 @@
+snowflake-snowpark-python
+snowflake-connector-python
+joblib==1.2.0
+pandas
+xgboost==1.7.6
+plotly
+feature_engine==1.6.0
+matplotlib
+folium == 0.14.0
+streamlit-folium
+openrouteservice
+pyarrow==10.0.1
+numpy
+holidays
+scikit-learn
+streamlit_javascript
