@@ -898,7 +898,7 @@ with tabs[0]: #Nathan
         st.session_state.prev_selected_truck_ids = []
         
     # Add a "Run Map" button
-    with ("RunMapForm"):
+    with st.form("RunMapForm"):
             if st.form_submit_button("Run Map"):
     
                 if selected_truck_ids:
@@ -1419,7 +1419,7 @@ with tabs[3]: #Aryton
     df_selected_loc =  df_loc[df_loc['TRUCK_ID'].isin(truck_id)]
     selected_loc_list = df_selected_loc['LOCATION_ID'].unique().tolist()
     
-    with ("RunMapForm7"):
+    with st.form("RunMapForm7"):
         if st.form_submit_button("Run Map"):
     
             if truck_id:
