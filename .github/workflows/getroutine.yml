@@ -11,8 +11,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          token:
-            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
+          token: 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
         
       - name: Setup Python
         uses: actions/setup-python@v2
