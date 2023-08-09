@@ -1,4 +1,4 @@
-name: get_coordinates
+name: generate_routines
 on:
     schedule:
     - cron: '0 0 * * *'
