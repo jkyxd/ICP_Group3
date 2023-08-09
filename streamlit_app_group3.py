@@ -20,12 +20,15 @@ from streamlit_folium import st_folium
 import openrouteservice as ors
 import operator
 from functools import reduce
+from streamlit_javascript import st_javascript
 
 st.set_page_config(layout="wide")
+
 #Loading model and data
 model=joblib.load('model.joblib')
 old_updated_model=joblib.load('updated_old_model.joblib')
 connection_parameters = { "account": 'hiioykl-ix77996',"user": 'JAVIER',"password": '02B289223r04', "role": "ACCOUNTADMIN","database": "FROSTBYTE_TASTY_BYTES","warehouse": "COMPUTE_WH"}
+
 session = Session.builder.configs(connection_parameters).create()
 X_final_scaled=pd.read_csv('x_final_scaled.csv')
 unique_location_ids = X_final_scaled['LOCATION_ID'].unique()
@@ -72,7 +75,7 @@ st.image('speedybytes_icon2.jpg',  width=600)
 
 # session.use_schema("ANALYTICS")
 # weadf=session.sql(query).toPandas()
-# st.image('speedybytes_icon2.jpg',width=600)
+st.image('speedybytes_icon2.jpg',width=600)
 @st.cache_data  #for caching the csvs
 def load_truck_data():
     df = pd.read_csv('truck_df.csv')
@@ -87,8 +90,8 @@ def load_sales_pred():
 def load_x_final_scaled():
     df=pd.read_csv('x_final_scaled.csv')
     return df
-
-tab1,tab2,tab3,tab4,tab5 = st.tabs(["Routing Map", "Current vs Usual Route", "Optimal Shift Timing Recommendation",'tab4','Sales Forecast'])
+list_of_tabs = ["Routing Map", "Current vs Usual Route", "Optimal Shift Timing Recommendation", "tab4", "Sales Forecast"]
+tabs = st.tabs(list_of_tabs)
 
 #Code to get the updated model from asg2
 def updated_old_model():
@@ -137,7 +140,8 @@ def trim_outliers(dataframe, column, lower_percentile=0.01, upper_percentile=0.9
     upper_bound = dataframe[column].quantile(upper_percentile)
     return dataframe[(dataframe[column] >= lower_bound) & (dataframe[column] <= upper_bound)]
 
-with tab1: #Nathan
+with tabs[0]: #Nathan
+
     X_final_scaled=pd.read_csv('x_final_scaled.csv')
     truck_location_df=pd.read_csv('truck_manager_merged_df.csv')
     
@@ -231,7 +235,6 @@ with tab1: #Nathan
                         folium.PolyLine(points, color=polyline_color, dash_array='5', opacity='0.6',
                                         tooltip=f'Truck Route {selected_truck_id}').add_to(m)
 
-
                         # Specify marker color based on polyline color
                         marker_color = 'white' if polyline_color != 'white' else 'black'
 
@@ -300,6 +303,18 @@ with tab1: #Nathan
                         
                 # Convert the truck_info dictionary to a DataFrame
                 truck_info_df = pd.DataFrame(truck_info)
+                def make_clickable(truck_id):
+                    # target _blank to open new window
+                    # extract clickable text to display for your link
+                  
+
+                    
+                    url = f"/?tab=1&truck_id={str(truck_id)}"
+                
+                    return f'<a target="_blank" href="{url}">{truck_id}</a>'
+                
+                print(truck_info_df)
+                truck_info_df['Truck ID🚚']=truck_info_df['Truck ID🚚'].apply(make_clickable)
 
                 # Create a new column "Colour" with background colors
                 truck_info_df['Colour'] = truck_info_df['Truck Colour']
@@ -313,9 +328,10 @@ with tab1: #Nathan
 
                 # Apply the custom style to the 'Truck Color' column
                 styled_truck_info_df = truck_info_df.style.applymap(style_color_cells, subset=['Colour'])
+                
 
                 # Display the styled DataFrame using st.dataframe
-                st.dataframe(styled_truck_info_df)
+                st.write(styled_truck_info_df.to_html(),unsafe_allow_html=True)
 
                 # Display the map with the selected truck routes
         st_folium(m, width=1500)
@@ -345,6 +361,7 @@ with tab1: #Nathan
     # Add a "Run Map" button
     with st.form("RunMapForm"):
             st.form_submit_button("Run Map")
+            
     
             if selected_truck_ids:
                     if selected_truck_ids != st.session_state.prev_selected_truck_ids:
@@ -365,7 +382,7 @@ with tab1: #Nathan
 
 
 
-with tab5: #minh
+with tabs[4]: #minh
     import calendar
     def get_dates(year, month):
     
@@ -1416,7 +1433,7 @@ with tab5: #minh
             print(f"An error occurred with the streamlit web app: {e}")
         
 
-with tab3: #javier
+with tabs[2]: #javier
     X_final_scaled=load_x_final_scaled()
     sales_pred=load_sales_pred()
     X_final_scaled=X_final_scaled.merge(sales_pred["l_w5i8_DATE"].astype(str).str[:4].rename('YEAR'), left_index=True, right_index=True)
@@ -1644,14 +1661,14 @@ with tab3: #javier
 
 
 
-with tab4: #Aryton
+with tabs[3]: #Aryton
     print('Aryton')
 
 
     
    
-with tab2: 
-    st.title("Recomended Route vs Usual Route")
+with tabs[1]: 
+    
     
     @st.cache_data
     def get_data() -> pd.DataFrame:
@@ -1711,10 +1728,19 @@ with tab2:
         distance_per_km =  (total_sales/total_distance).round(2)
         return total_sales, total_working_hours, total_distance, distance_per_km
     
+    query=st.experimental_get_query_params()
+    truck_ids=list(pd.unique(predicted_route["Truck_ID"]))
+    try:
+        truck_id=query["truck_id"][0]
+        print(truck_id)
+        ind=truck_ids.index(int(truck_id))
+        truck_filter = st.selectbox("Select the Truck", truck_ids,index=ind)
+        
+    except:
     
     
    
-    truck_filter = st.selectbox("Select the Truck", pd.unique(predicted_route["Truck_ID"]))
+        truck_filter = st.selectbox("Select the Truck", pd.unique(predicted_route["Truck_ID"]))
    
     predicted_route= predicted_route[predicted_route["TRUCK_ID"] ==  truck_filter]
     usual_route=usual_route[usual_route["Truck_ID"] ==  truck_filter]
@@ -1861,7 +1887,7 @@ with tab2:
     if 'truck_fiter' not in st.session_state:
         st.session_state.truck_filter = None
             
-    with st.form("RunMapForm"):
+    with st.form("RunMapForm2"):
         st.form_submit_button("Run Map")
     
         if truck_filter:
@@ -1885,6 +1911,27 @@ with tab2:
         
         
         
+query = st.experimental_get_query_params()
+
+try:
+    print(query)
+    print(int(query["tab"][0]))
+    index_tab =int(query["tab"][0])
+    print(index_tab)
+    ## Click on that tab
+    js = f"""
+    <script>
+        var tab = window.parent.document.getElementById('tabs-bui3-tab-{index_tab}');
+        tab.click();
+    </script>
+    """
+
+    st.components.v1.html(js)
+
+except :
+    print("WRONG")
+    ## Do nothing if the query parameter does not correspond to any of the tabs
+    pass
         
         
         
@@ -1892,53 +1939,52 @@ with tab2:
         
         
         
+#         #vibu
         
-        #vibu
-        
-    #     df= pd.read_csv('truck_location_df.csv')
-    #     df['Date'] = pd.to_datetime(df['Date'])
-    #     df["Date"]=pd.to_datetime(df['Date'], format='%d/%m/%Y')
+#     #     df= pd.read_csv('truck_location_df.csv')
+#     #     df['Date'] = pd.to_datetime(df['Date'])
+#     #     df["Date"]=pd.to_datetime(df['Date'], format='%d/%m/%Y')
 
-    # # Sort the DataFrame by Date
-    #     df.sort_values(by='Date', inplace=True)
+#     # # Sort the DataFrame by Date
+#     #     df.sort_values(by='Date', inplace=True)
 
 
 
-    # # Dashboard title
-    #     st.title("Food Truck Competitor Analysis Dashboard")
+#     # # Dashboard title
+#     #     st.title("Food Truck Competitor Analysis Dashboard")
 
-    # # Overview Section
-    #     st.header("Overview")
-    #     df['predicted_earning'] = df['predicted_earning'].apply(lambda x: [int(float(i)) for i in x.strip('[]').split(',')])
-    #     total_sales=df['predicted_earning'].apply(lambda x: sum(x)).sum()
+#     # # Overview Section
+#     #     st.header("Overview")
+#     #     df['predicted_earning'] = df['predicted_earning'].apply(lambda x: [int(float(i)) for i in x.strip('[]').split(',')])
+#     #     total_sales=df['predicted_earning'].apply(lambda x: sum(x)).sum()
 
-    #     average_predicted_earnings = df['predicted_earning'].apply(lambda x: sum(x) / len(x)).mean()
-    #     total_locations_visited = df['Num_of_locs'].sum()
+#     #     average_predicted_earnings = df['predicted_earning'].apply(lambda x: sum(x) / len(x)).mean()
+#     #     total_locations_visited = df['Num_of_locs'].sum()
 
-    #     st.write(f"Total Sales (Last 2 weeks): ${round(total_sales, 2)}")
-    #     st.write(f"Average Predicted Earnings: ${round(average_predicted_earnings, 2)}")
-    #     st.write(f"Total Locations Visited: {total_locations_visited}")
+#     #     st.write(f"Total Sales (Last 2 weeks): ${round(total_sales, 2)}")
+#     #     st.write(f"Average Predicted Earnings: ${round(average_predicted_earnings, 2)}")
+#     #     st.write(f"Total Locations Visited: {total_locations_visited}")
 
-    # # # Sales Performance Section
-    # #     st.header("Sales Performance")
-    # #     fig_sales = px.bar(df, x='Date', y='predicted_earning', title='Predicted Earnings Over Time')
-    # #     st.plotly_chart(fig_sales)
+#     # # # Sales Performance Section
+#     # #     st.header("Sales Performance")
+#     # #     fig_sales = px.bar(df, x='Date', y='predicted_earning', title='Predicted Earnings Over Time')
+#     # #     st.plotly_chart(fig_sales)
 
-    # # Efficiency Metrics Section
-    #     st.header("Efficiency Metrics")
-    #     fig_hours = px.pie(df, names='Truck_ID', values='working_hour', title='Distribution of Working Hours')
-    #     fig_shifts = px.bar(df, x='Truck_ID', y='Num_of_locs', title='Number of Locations Visited')
-    #     st.plotly_chart(fig_hours)
-    #     st.plotly_chart(fig_shifts)
+#     # # Efficiency Metrics Section
+#     #     st.header("Efficiency Metrics")
+#     #     fig_hours = px.pie(df, names='Truck_ID', values='working_hour', title='Distribution of Working Hours')
+#     #     fig_shifts = px.bar(df, x='Truck_ID', y='Num_of_locs', title='Number of Locations Visited')
+#     #     st.plotly_chart(fig_hours)
+#     #     st.plotly_chart(fig_shifts)
 
 
-    # # Prioritization Analysis Section
-    #     st.header("Prioritization Analysis")
-    #     df['Priority_Order'] = df['Truck_ID'].rank(method='first')
-    #     fig_priority = px.bar(df, x='Truck_ID', y='predicted_earning', color='Priority_Order',
-    #                       labels={'Truck_ID': 'Truck ID', 'predicted_earning': 'Predicted Earnings'},
-    #                       title='Truck Prioritization Based on Sales Performance')
-    #     st.plotly_chart(fig_priority)
+#     # # Prioritization Analysis Section
+#     #     st.header("Prioritization Analysis")
+#     #     df['Priority_Order'] = df['Truck_ID'].rank(method='first')
+#     #     fig_priority = px.bar(df, x='Truck_ID', y='predicted_earning', color='Priority_Order',
+#     #                       labels={'Truck_ID': 'Truck ID', 'predicted_earning': 'Predicted Earnings'},
+#     #                       title='Truck Prioritization Based on Sales Performance')
+#     #     st.plotly_chart(fig_priority)
 
     
         
