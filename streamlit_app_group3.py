@@ -2767,6 +2767,7 @@ with tabs[4]: #Tran Huy Minh S10223485H Tab Revenue Forecasting & Model Performa
                             print(f"An error occurred while loading the model from the file: {e}")
                     #Trimming Outliers for Holdout Graph
                     X_final_scaled = trim_outliers(X_final_scaled, 'Revenue')
+                    X_final_scaled['Revenue'] = np.log1p(X_final_scaled['Revenue'])
                 elif selected_model == 'Nathan Model':
                     try:
                         model_per = nathan_model
