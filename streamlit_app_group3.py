@@ -1784,7 +1784,7 @@ with tabs[1]:
     
     data=predicted_route[["predicted_earning","location_visited"]]
     data=data.rename(columns={"predicted_earning":"sales"})
-    data=data.append(usual_route[["sales","location_visited"]],ignore_index=True)
+    data=data.concat(usual_route[["sales","location_visited"]],ignore_index=True)
     data["color"]=["black","purple"]
     data["color_marker"]=["beige","light green"]
     data=data.rename(columns={"location_visited":"location"})
