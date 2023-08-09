@@ -1243,7 +1243,7 @@ with tabs[3]: #Aryton
     
         #map
             
-        m = folium.Map(location=[DEFAULT_LATITUDE, DEFAULT_LONGITUDE], zoom_start=zoom)
+        m2 = folium.Map(location=[DEFAULT_LATITUDE, DEFAULT_LONGITUDE], zoom_start=zoom)
     
         # Iterate over the locationlist
         for point in range(0, len(locationlist)):
@@ -1258,7 +1258,7 @@ with tabs[3]: #Aryton
             coords = (locationlist[point][1], locationlist[point][2])
             # Create a marker with the popup
             marker = folium.Marker(coords, popup=popup)
-            marker.add_to(m)
+            marker.add_to(m2)
     
         if current_loc == 'Yes':
             # Create the popup content
@@ -1268,16 +1268,16 @@ with tabs[3]: #Aryton
             # Create a marker with the popup
             marker_icon = folium.Icon(color='red', icon='circle')
             marker = folium.Marker(curr_coords, popup=popup, icon=marker_icon)
-            marker.add_to(m)
+            marker.add_to(m2)
     
             folium.Circle(
                 location=curr_coords,
                 radius=1000,  # 1km in meters
                 color='red',
                 fill=False
-            ).add_to(m)
+            ).add_to(m2)
     
-        f_map = st_folium(m, width=725)
+        f_map = st_folium(m2, width=725)
         return df_loc
     
     def get_inputs():
