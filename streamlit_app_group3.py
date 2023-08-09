@@ -49,19 +49,12 @@ st.title('SpeedyBytes 🚚')
 # weadf=session.sql(query).toPandas()
 # st.image('speedybytes_icon2.jpg',width=600)
 @st.cache_data  #for caching the csvs
-def load_truck_data():
-    df = pd.read_csv('truck_df.csv')
-    return df
+
 
 @st.cache_data
-def load_sales_pred():
-    df=pd.read_csv('sales_pred.csv')
-    return df
 
-@st.cache_data
-def load_x_final_scaled():
-    df=pd.read_csv('x_final_scaled.csv')
-    return df
+
+
 list_of_tabs = ["Routing Map", "Current vs Usual Route", "Optimal Shift Timing Recommendation", "Revenue By Location & Time", "Revenue Forecasting & Model Performance"]
 tabs = st.tabs(list_of_tabs)
 
@@ -955,8 +948,8 @@ for location_id in unique_location_ids:
                                                   "Longitude": [longitude]})],
                          ignore_index=True)
 with tabs[2]: #javier
-    X_final_scaled=load_x_final_scaled()
-    sales_pred=load_sales_pred()
+    X_final_scaled=pd.read_csv("x_final_scaled.csv")
+    sales_pred=pd.read_csv("sales_pred.csv")
     X_final_scaled=X_final_scaled.merge(sales_pred["l_w5i8_DATE"].astype(str).str[:4].rename('YEAR'), left_index=True, right_index=True)
     st.header('Optimal Shift Timing Recommendation')
     st.subheader('Want to find out the optimal working hours for your truck?')
