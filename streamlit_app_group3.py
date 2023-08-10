@@ -900,7 +900,7 @@ with tabs[0]: #Nathan
     map_placeholder = st.empty()
         
 
-with tab[2]: #javier
+with tabs[2]: #javier
     
     
     st.header('Optimal Shift Timing Recommendation')
