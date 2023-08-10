@@ -1006,9 +1006,10 @@ with tab[2]: #javier
 
 
     def find_optimal_hour(truck_id,date,no_of_hours):
-        sales_pred=session.sql("select * from ANALYTICS.SALES_PREDICTION").to_pandas(
+        sales_pred=session.sql("select * from ANALYTICS.SALES_PREDICTION").to_pandas()
         X_final_scaled=X_final_scaled.merge(sales_pred["l_w5i8_DATE"].astype(str).str[:4].rename('YEAR'), left_index=True, right_index=True)
         query = 'SELECT * FROM "weadf_trend" WHERE DATE = \'{}\''.format(for_weadf)
+        
 
         session.use_schema("ANALYTICS")
         weadf=session.sql(query).toPandas()
@@ -1024,7 +1025,7 @@ with tab[2]: #javier
             
             new_df = pd.merge(input_df, weadf,  how='left', left_on=['date','HOUR'], right_on = ['DATE','H']).drop_duplicates() #works
             
-            filtered_df = X_final_scaled[(X_final_scaled['TRUCK_ID'] == truck_id) & (X_final_scaled['YEAR'].astype(int) == input_df['YEAR'][0].astype(int))]
+            filtered_df = [(['TRUCK_ID'] == truck_id) & (['YEAR'].astype(int) == input_df['YEAR'][0].astype(int))]
             filtered_df = filtered_df[['TRUCK_ID', 'MENU_TYPE_GYROS_ENCODED', 'MENU_TYPE_CREPES_ENCODED', 
                                     'MENU_TYPE_BBQ_ENCODED', 'MENU_TYPE_SANDWICHES_ENCODED', 'MENU_TYPE_Mac & Cheese_encoded', 'MENU_TYPE_POUTINE_ENCODED', 
                                     'MENU_TYPE_ETHIOPIAN_ENCODED', 'MENU_TYPE_TACOS_ENCODED', 'MENU_TYPE_Ice Cream_encoded', 'MENU_TYPE_Hot Dogs_encoded', 'MENU_TYPE_CHINESE_ENCODED', 
@@ -1037,7 +1038,7 @@ with tab[2]: #javier
             
             #works
         
-            filtered_df = X_final_scaled[(X_final_scaled['TRUCK_ID'] == truck_id) & (X_final_scaled['HOUR'] == x) & (X_final_scaled['YEAR'].astype(int) == input_df['YEAR'][0].astype(int))]
+            filtered_df = [(['TRUCK_ID'] == truck_id) & (['HOUR'] == x) & (['YEAR'].astype(int) == input_df['YEAR'][0].astype(int))]
             
             sum_prev_year=filtered_df['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].mean()
             sum_day_of_week=filtered_df['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].mean()
@@ -1298,15 +1299,15 @@ with tabs[3]: #Aryton
         #input_df['LAT'] = temp['LAT']
         #input_df['LONG'] = temp['LONG']
         #input_df['LOCATION_ID'] = loc_id
-        input_df['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'] = x_final_scaled['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].mean()
-        input_df['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'] = x_final_scaled['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].mean()
+        input_df['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'] = ['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].mean()
+        input_df['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'] = ['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].mean()
     
     
     
         #get encoded features
         month = input_df['MONTH'].iloc[0]
         #year = str(input_df['YEAR'].iloc[0])
-        current_df = x_final_scaled[(x_final_scaled['TRUCK_ID'].isin(truck_id)) & (x_final_scaled['MONTH'] == month)] #& (x_final_scaled['YEAR'] == year)
+        current_df = [(['TRUCK_ID'].isin(truck_id)) & (['MONTH'] == month)] #& (['YEAR'] == year)
         encoded_X = current_df[['TRUCK_ID','MENU_TYPE_GYROS_ENCODED', 'MENU_TYPE_CREPES_ENCODED', 'MENU_TYPE_BBQ_ENCODED', 'MENU_TYPE_SANDWICHES_ENCODED', 'MENU_TYPE_Mac & Cheese_encoded', 'MENU_TYPE_POUTINE_ENCODED', 'MENU_TYPE_ETHIOPIAN_ENCODED', 'MENU_TYPE_TACOS_ENCODED', 'MENU_TYPE_Ice Cream_encoded', 'MENU_TYPE_Hot Dogs_encoded', 'MENU_TYPE_CHINESE_ENCODED', 'MENU_TYPE_Grilled Cheese_encoded', 'MENU_TYPE_VEGETARIAN_ENCODED', 'MENU_TYPE_INDIAN_ENCODED', 'MENU_TYPE_RAMEN_ENCODED', 'CITY_SEATTLE_ENCODED', 'CITY_DENVER_ENCODED', 'CITY_San Mateo_encoded', 'CITY_New York City_encoded', 'CITY_BOSTON_ENCODED', 'REGION_NY_ENCODED', 'REGION_MA_ENCODED', 'REGION_CO_ENCODED', 'REGION_WA_ENCODED', 'REGION_CA_ENCODED']].drop_duplicates()
         input_df = pd.merge(input_df, encoded_X,  how='left', left_on=['TRUCK_ID'], right_on =['TRUCK_ID']).drop_duplicates()
         sum_X = current_df[['TRUCK_ID','MONTH','HOUR','DAY','SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE', 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE']]
@@ -1379,7 +1380,7 @@ with tabs[3]: #Aryton
     truck_id = [truck_id]
     current_loc = st.selectbox("Go to your current location? ***(SHOWN AS RED MARKER ON MAP)***", ("Yes", "No"))
     
-    #get x_final_scaled
+    #get 
     x_final_scaled = pd.read_csv('x_final_scaled.csv')
     df_loc = x_final_scaled[['LOCATION_ID', 'LAT', 'LONG', 'TRUCK_ID']]
     df_loc.drop_duplicates(inplace=True)
