@@ -1262,7 +1262,7 @@ with tabs[3]: #Aryton
     
             folium.Circle(
                 location=curr_coords,
-                radius=1000,  # 1km in meters
+                radius=2000,  # 1km in meters
                 color='red',
                 fill=False
             ).add_to(m2)
@@ -1270,12 +1270,7 @@ with tabs[3]: #Aryton
         f_map = st_folium(m2, width=725)
         return df_loc
     
-    def get_inputs():
-    
-        #DELETE LATER
-        #truck_id = [27]
-        #selected_loc_id = [14808, 14806, 3447]
-        #hour = 8
+    def predict():
     
     
         lat_input = []
@@ -1399,7 +1394,7 @@ with tabs[3]: #Aryton
     st.title('Compare sales by location and hour')
     st.write('''###### This tab allows you to predict and visualise the sales for the specified location and hour''')
     
-    truck_id = st.selectbox('Select Truck ID to view the locations available to you:', [27, 28, 43, 44, 46, 47])
+    truck_id = st.selectbox('Select Truck ID to view the locations available to you:', [1,2,13,17,21,28,34,43,46,47])#[27, 28, 43, 44, 46, 47]
     truck_id = [truck_id]
     current_loc = st.selectbox("Go to your current location? ***(SHOWN AS RED MARKER ON MAP)***", ("Yes", "No"))
     
