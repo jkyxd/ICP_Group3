@@ -811,6 +811,7 @@ with tabs[0]: #Nathan
                         'Truck ID🚚': [],  # Updated column name
                         'Number of Shifts': [],
                         'Total Revenue💵': [],
+                        'Working Hours' :[],
                         'Truck Colour': []  # Updated column name
                         }
 
@@ -827,6 +828,8 @@ with tabs[0]: #Nathan
                         truck_info['Number of Shifts'].append(num_shifts)
                         total_revenue = total_revenue_per_truck.get(selected_truck_id, 0)
                         truck_info['Total Revenue💵'].append(total_revenue)
+                        selected_working_hour= truck_location_df[truck_location_df['Truck_ID'] == selected_truck_id]['working_hour'].iloc[0]
+                        truck_info['Working Hours'].append(selected_working_hour)                        
                         color_index = available_trucks.index(selected_truck_id)
                         truck_color = colors[color_index % len(colors)]
                         truck_info['Truck Colour'].append(truck_color)
