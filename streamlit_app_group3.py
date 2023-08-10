@@ -1170,7 +1170,7 @@ with tabs[2]: #javier
         st.success("Algorithm completed!")
         st.write("Results:")
         st.text(f"Optimal working hours for truck ID {truck_id}: "+str(output[0]))
-        st.text(f"Total revenue generated in {no_of_hours} hours': "+str(output[1]))
+        st.text(f"Total revenue generated in {no_of_hours} hours: "+str(output[1]))
         # str(output[0])
 
 
