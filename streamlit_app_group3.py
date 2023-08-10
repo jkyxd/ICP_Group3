@@ -1634,7 +1634,8 @@ with tabs[1]: #Vibu
                 loc_list.append(int(i))
                 
             lat_list,long_list=get_lat_long(loc_list)
-            
+            print(lat_list)
+            print(long_list)
         
            
             
