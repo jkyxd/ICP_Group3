@@ -913,10 +913,10 @@ with tabs[2]: #javier
             
     st.subheader('2. Specify the number of hours your truck is working for')
 
-    no_of_hours = st.text_input("Enter the number of hours (1-23): ")
+    no_of_hours = st.text_input("Enter the number of hours (1-16): ")
     if no_of_hours.isnumeric():
         hours = int(no_of_hours)
-        if 1 <= hours <= 23:
+        if 1 <= hours <= 16:
             st.success(f"Your input of {hours} hours has been saved!")
         else:
             st.warning("Please enter a number between 1 and 23.")
