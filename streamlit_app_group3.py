@@ -28,14 +28,17 @@ from streamlit_javascript import st_javascript
 st.set_page_config(layout="wide")
 
 #Loading model and data
-ayrton_model=joblib.load('ayrton_model.joblib')
+#ayrton_model=joblib.load('ayrton_model.joblib')
 #javier_model=joblib.load('javier_model.joblib')
 #minh_model=joblib.load('minh_model.joblib')
 #nathan_model=joblib.load('nathan_model.joblib')
 #vibu_model=joblib.load('vibu_model.joblib')
+#Note, due to streamlit memeory and cacheing issues, individual models cannot be loaded otherwise it would crash.
+#Repository with python files where these models are run: https://github.com/anijam99/TrendStreamlitTest/blob/main/streamlit_app_group3.py
+#Other Streamlit Web App with Minh's tab showcasing all the models: https://minhtab3-icp-grp3.streamlit.app/
 old_updated_model=joblib.load('updated_old_model.joblib')
 old_model=joblib.load('model.joblib')
-model=ayrton_model
+model=joblib.load('group_model.joblib')
 connection_parameters = { "account": 'hiioykl-ix77996',"user": 'JAVIER',"password": '02B289223r04', "role": "ACCOUNTADMIN","database": "FROSTBYTE_TASTY_BYTES","warehouse": "COMPUTE_WH"}
 
 session = Session.builder.configs(connection_parameters).create()
@@ -69,26 +72,9 @@ def updated_old_model():
     X_train, X_test, y_train, y_test = train_test_split(X_training, y_training, test_size=0.2, random_state=42)
     xgb = XGBRegressor(objective="reg:squarederror", learning_rate=0.01523, max_depth=9, colsample_bytree=0.578, n_estimators=641, subsample=0.854)
     xgb.fit(X_train, y_train, early_stopping_rounds=10, eval_set=[(X_test, y_test)])
-    print('Train MSE is: ', mean_squared_error(xgb.predict(X_train), y_train))
-    print('Test MSE is: ', mean_squared_error(xgb.predict(X_test), y_test))
-    print()
-    print('Train RMSE is: ',  math.sqrt(mean_squared_error(xgb.predict(X_train), y_train)))
-    print('Test RMSE is: ', math.sqrt(mean_squared_error(xgb.predict(X_test), y_test)))
-    print()
-    print('Train MAE is: ', mean_absolute_error(xgb.predict(X_train), y_train))
-    print('Test MAE is: ', mean_absolute_error(xgb.predict(X_test), y_test))
-    print()
-    print('Train R2 is: ', r2_score(xgb.predict(X_train), y_train))
-    print('Test R2 is: ', r2_score(xgb.predict(X_test), y_test))
-    print('Holdout MSE is: ', mean_squared_error(df_predictions['Predicted'], df_predictions['Holdout']))
-    print()
-    print('Holdout RMSE is: ',  math.sqrt(mean_squared_error(df_predictions['Predicted'], df_predictions['Holdout'])))
-    print()
-    print('Holdout MAE is: ', mean_absolute_error(df_predictions['Predicted'], df_predictions['Holdout']))
-    print()
-    print('Holdout R2 is: ', r2_score(df_predictions['Predicted'], df_predictions['Holdout']))
     joblib.dump(xgb, 'updated_old_model.joblib')
 
+#Code to get the new asg3 model
 def new_group_model():
     session.use_schema("ANALYTICS")
     X_final_scaled=session.sql('Select * from "Sales_Forecast_Training_Data"').to_pandas()
@@ -111,33 +97,13 @@ def new_group_model():
     # Train the stacking model
     stacking_model = stacking_model.fit(X_train, y_train)
 
-    print('Train MSE is: ', mean_squared_error(stacking_model.predict(X_train), y_train))
-    print('Test MSE is: ', mean_squared_error(stacking_model.predict(X_test), y_test))
-    print()
-    print('Train RMSE is: ',  math.sqrt(mean_squared_error(stacking_model.predict(X_train), y_train)))
-    print('Test RMSE is: ', math.sqrt(mean_squared_error(stacking_model.predict(X_test), y_test)))
-    print()
-    print('Train MAE is: ', mean_absolute_error(stacking_model.predict(X_train), y_train))
-    print('Test MAE is: ', mean_absolute_error(stacking_model.predict(X_test), y_test))
-    print()
-    print('Train R2 is: ', r2_score(stacking_model.predict(X_train), y_train))
-    print('Test R2 is: ', r2_score(stacking_model.predict(X_test), y_test))
-
-    
-    print('Holdout MSE is: ', mean_squared_error(df_predictions['Predicted'], df_predictions['Holdout']))
-    print()
-    print('Holdout RMSE is: ',  math.sqrt(mean_squared_error(df_predictions['Predicted'], df_predictions['Holdout'])))
-    print()
-    print('Holdout MAE is: ', mean_absolute_error(df_predictions['Predicted'], df_predictions['Holdout']))
-    print()
-    print('Holdout R2 is: ', r2_score(df_predictions['Predicted'], df_predictions['Holdout']))
-
 #TRIMMING CODE
 def trim_outliers(dataframe, column, lower_percentile=0.01, upper_percentile=0.99):
     lower_bound = dataframe[column].quantile(lower_percentile)
     upper_bound = dataframe[column].quantile(upper_percentile)
     return dataframe[(dataframe[column] >= lower_bound) & (dataframe[column] <= upper_bound)]
 
+#Code to get individual models
 from sklearn.model_selection import GridSearchCV
 def train_javier_model():
     xgb = XGBRegressor(objective= 'reg:squarederror',
