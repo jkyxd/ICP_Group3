@@ -45,7 +45,7 @@ session = Session.builder.configs(connection_parameters).create()
 
 
 import plotly.express as px
-st.title('SpeedyBytes 🚚')
+st.title('SpeedyBytes 🚚 Github: https://github.com/jkyxd/ICP_Group3/tree/main')
 # st.image('speedybytes_icon2.jpg',  width=600)
 
 list_of_tabs = ["Routing Map", "Current vs Usual Route", "Optimal Shift Timing Recommendation", "Revenue By Location & Time", "Revenue Forecasting & Model Performance"]
