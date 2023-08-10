@@ -935,9 +935,9 @@ for location_id in unique_location_ids:
                                                   "Latitude": [latitude],
                                                   "Longitude": [longitude]})],
                          ignore_index=True)
-with tabs[2]: #javier
-    X_final_scaled=pd.read_csv("x_final_scaled.csv")
-    sales_pred=pd.read_csv("sales_pred.csv")
+with tab[2]: #javier
+    #X_final_scaled=load_x_final_scaled()
+    #sales_pred=load_sales_pred()
     X_final_scaled=X_final_scaled.merge(sales_pred["l_w5i8_DATE"].astype(str).str[:4].rename('YEAR'), left_index=True, right_index=True)
     st.header('Optimal Shift Timing Recommendation')
     st.subheader('Want to find out the optimal working hours for your truck?')
@@ -946,8 +946,7 @@ with tabs[2]: #javier
     truck_id = st.selectbox("Select your Truck ID", truck_ids)
     if truck_id:
             st.success(f"Your selected Truck ID '{truck_id}' has been saved!")
-        
-        
+            weadf=load_weadf()
     st.subheader('2. Specify the number of hours your truck is working for')
 
     no_of_hours = st.text_input("Enter the number of hours (1-23): ")
@@ -979,20 +978,14 @@ with tabs[2]: #javier
     if is_valid_date_format(date):
         st.success(f"Your input date '{date}' has been saved !")
         date_d=pd.to_datetime(date)
-        datetime_object = datetime.strptime(date, '%Y-%m-%d')
+        datetime_object = datetime.datetime.strptime(date, '%Y-%m-%d')
         
         
         input_df = pd.DataFrame({'TRUCK_ID': [truck_id],'date': [date]})
     
         #seperate date into month, dow, day, public_holiday
         input_df['date'] = date_d
-        for_weadf = date_d.date()
-        input_df['date'] = pd.to_datetime(input_df['date'])
-        input_df['MONTH'] = input_df['date'].dt.month
-        input_df['DOW'] = input_df['date'].dt.weekday
-        input_df['DAY'] = input_df['date'].dt.day
-        input_df['WOM'] = (input_df['DAY'] - 1) // 7 + 1
-        input_df['YEAR'] = input_df['date'].dt.year
+        
         
         
         
@@ -1006,11 +999,14 @@ with tabs[2]: #javier
             mask = month_mask & day_mask & dow_mask & wom_mask
             input_df.loc[mask, 'PUBLIC_HOLIDAY'] = 1
     
-        
+       
     elif date.strip() != "":
         st.warning("Please enter a valid date in the format 'YYYY-M-D'.")
     st.subheader('4. Optimal shift timing will be recommended to you based on the forecasted total average revenue across all locations')
-    try:
+    
+
+
+    def find_optimal_hour(truck_id,date,no_of_hours):
         query = 'SELECT * FROM "weadf_trend" WHERE DATE = \'{}\''.format(for_weadf)
 
         session.use_schema("ANALYTICS")
@@ -1018,58 +1014,15 @@ with tabs[2]: #javier
         weadf['LOCATION_ID']=weadf['LOCATION_ID'].astype('str')
         weadf['WEATHERCODE']=weadf['WEATHERCODE'].astype('int64')
         weadf['H']=weadf['H'].astype('int64')
-    except:pass
-
-
-    def find_optimal_hour(truck_id,date,no_of_hours):
+        
         #works
         average_revenue_for_hour=pd.DataFrame(columns=['TRUCK_ID','HOUR','AVERAGE REVENUE PER HOUR'])   
-        #TODO for loop testing - change hour, sum1,sum2,weathercode
         for x in range(8,24):
-            # truck_df=load_truck_data()
-
-            # truck_df_temp=truck_df[truck_df['TRUCK_ID']==truck_id]
-            # truck_df_temp=truck_df_temp.reset_index()
-            # truck_df_temp=truck_df_temp.drop(['index'],axis=1)
-    
-    
-            # city = truck_df_temp['PRIMARY_CITY'].iloc[0]
-        
-            #query = "SELECT * FROM LOCATION WHERE CITY = '{}'".format(city)
-            #session.use_schema('RAW_POS')
-            #query = "SELECT * FROM LOCATION"
-            #location_df=session.sql(query).toPandas()
-            #location_df.head()
-            #location_df.to_csv('location_df.csv',index=False)
-            
-
-            # location_df=pd.read_csv('location_df.csv')
-            # location_df = location_df[location_df['CITY']==city]
-            # city_locations = location_df.merge(df_unique_locations_lat_long, left_on='LOCATION_ID', right_on='Location ID', how='inner')
-            # city_locations = city_locations[['LOCATION_ID','Latitude','Longitude']]
-            # city_locations.rename(columns={"Latitude": "LAT"},inplace=True)
-            # city_locations.rename(columns={"Longitude": "LONG"},inplace=True)
-        
-            # loc_checker = city_locations.copy()
-            # loc_checker['DATE'] = date
-            
-            # loc_checker['DATE']=pd.to_datetime(loc_checker['DATE'],format='%Y-%m-%d')
-            # loc_checker['DATE']=loc_checker['DATE'].astype('str')
-           
-           
-                 
             input_df['date']=input_df['date'].astype('str')
             input_df['HOUR']=x
             
             new_df = pd.merge(input_df, weadf,  how='left', left_on=['date','HOUR'], right_on = ['DATE','H']).drop_duplicates() #works
             
-            #sales_pred=session.sql("select * from ANALYTICS.SALES_PREDICTION").to_pandas() #this is the problem.
-        
-            #sales_pred.to_csv('sales_pred.csv')
-            # sales_pred=load_sales_pred()
-    
-            # X_final_scaled=load_x_final_scaled()
-            # X_final_scaled=X_final_scaled.merge(sales_pred["l_w5i8_DATE"].astype(str).str[:4].rename('YEAR'), left_index=True, right_index=True)
             filtered_df = X_final_scaled[(X_final_scaled['TRUCK_ID'] == truck_id) & (X_final_scaled['YEAR'].astype(int) == input_df['YEAR'][0].astype(int))]
             filtered_df = filtered_df[['TRUCK_ID', 'MENU_TYPE_GYROS_ENCODED', 'MENU_TYPE_CREPES_ENCODED', 
                                     'MENU_TYPE_BBQ_ENCODED', 'MENU_TYPE_SANDWICHES_ENCODED', 'MENU_TYPE_Mac & Cheese_encoded', 'MENU_TYPE_POUTINE_ENCODED', 
@@ -1077,17 +1030,17 @@ with tabs[2]: #javier
                                     'MENU_TYPE_Grilled Cheese_encoded', 'MENU_TYPE_VEGETARIAN_ENCODED', 'MENU_TYPE_INDIAN_ENCODED', 'MENU_TYPE_RAMEN_ENCODED', 'CITY_SEATTLE_ENCODED', 
                                     'CITY_DENVER_ENCODED', 'CITY_San Mateo_encoded', 'CITY_New York City_encoded', 'CITY_BOSTON_ENCODED', 'REGION_NY_ENCODED', 'REGION_MA_ENCODED', 
                                     'REGION_CO_ENCODED', 'REGION_WA_ENCODED', 'REGION_CA_ENCODED']]
+            
+            
             merge_df = new_df.merge(filtered_df, left_on='TRUCK_ID', right_on='TRUCK_ID', how='inner').drop_duplicates()
+            
             #works
         
             filtered_df = X_final_scaled[(X_final_scaled['TRUCK_ID'] == truck_id) & (X_final_scaled['HOUR'] == x) & (X_final_scaled['YEAR'].astype(int) == input_df['YEAR'][0].astype(int))]
-        
+            
             sum_prev_year=filtered_df['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].mean()
             sum_day_of_week=filtered_df['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].mean()
             
-            filtered_df = X_final_scaled[(X_final_scaled['TRUCK_ID'] == truck_id) & 
-                                        (X_final_scaled['HOUR'] == x) &
-                                        (X_final_scaled['YEAR'].astype(int) == input_df['YEAR'][0].astype(int))]
         
             filtered_df = filtered_df[['TRUCK_ID', 'MONTH','DAY', 'SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE', 'SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE', 'YEAR']]
             filtered_df['YEAR'] = filtered_df['YEAR'].astype(int)
@@ -1123,8 +1076,12 @@ with tabs[2]: #javier
             data_for_avg_revenue=[truck_id,x,initial_df_position['Predicted'].mean()]
             average_revenue_for_hour.loc[len(average_revenue_for_hour)]=data_for_avg_revenue
             
-       
-        
+    def find_optimal_hour_output(truck_id,date,no_of_hours):
+        hour_predicted=pd.read_csv('truck_best_timings.csv')
+        year, month, day = date.split('-')
+        converted_date = f"{int(day)}/{int(month)}/{year}"
+        chosen_date=hour_predicted[hour_predicted['DATE']==converted_date]
+        average_revenue_for_hour=chosen_date.drop(columns=['DATE'])
         
         #Initialize variables
         average_revenue_for_hour['rolling_average']=0
@@ -1148,10 +1105,21 @@ with tabs[2]: #javier
 
     
         return values
+        
+        
+        
+
+        
+        
+         
+       
+        
+        
+        
     if st.button("Run Algorithm"):
         # Display a loading message while the algorithm is running
         with st.spinner("Running the algorithm..."):
-            output = find_optimal_hour(truck_id,date,no_of_hours)
+            output = find_optimal_hour_output(truck_id,date,no_of_hours)
     
         # Show the output once the algorithm is done
         st.success("Algorithm completed!")
