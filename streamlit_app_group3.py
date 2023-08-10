@@ -910,7 +910,7 @@ with tabs[2]: #javier
     truck_id = st.selectbox("Select your Truck ID", truck_ids)
     if truck_id:
             st.success(f"Your selected Truck ID '{truck_id}' has been saved!")
-            weadf=load_weadf()
+            
     st.subheader('2. Specify the number of hours your truck is working for')
 
     no_of_hours = st.text_input("Enter the number of hours (1-23): ")
