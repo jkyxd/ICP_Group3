@@ -1403,10 +1403,15 @@ with tabs[3]: #Aryton
     truck_id = [truck_id]
     current_loc = st.selectbox("Go to your current location? ***(SHOWN AS RED MARKER ON MAP)***", ("Yes", "No"))
     
-    #get 
-    x_final_scaled = pd.read_csv('x_final_scaled.csv')
-    df_loc = x_final_scaled[['LOCATION_ID', 'LAT', 'LONG', 'TRUCK_ID']]
-    df_loc.drop_duplicates(inplace=True)
+    #get x_final_scaled
+    
+    #since x_final_scaled is too large, due to streamlit's computational limitations, only df_loc, a subset of x_final_scaled will be used
+    #x_final_scaled = pd.read_csv('x_final_scaled.csv')
+    #df_loc = x_final_scaled[['LOCATION_ID', 'LAT', 'LONG', 'TRUCK_ID']]
+    #df_loc.drop_duplicates(inplace=True)
+    
+    
+    df_loc = pd.read_csv('df_loc.csv')
     all_loc_list = df_loc['LOCATION_ID'].unique().tolist()
     df_selected_loc =  df_loc[df_loc['TRUCK_ID'].isin(truck_id)]
     selected_loc_list = df_selected_loc['LOCATION_ID'].unique().tolist()
