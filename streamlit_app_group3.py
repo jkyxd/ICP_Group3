@@ -936,9 +936,8 @@ for location_id in unique_location_ids:
                                                   "Longitude": [longitude]})],
                          ignore_index=True)
 with tab[2]: #javier
-    #X_final_scaled=load_x_final_scaled()
-    #sales_pred=load_sales_pred()
-    X_final_scaled=X_final_scaled.merge(sales_pred["l_w5i8_DATE"].astype(str).str[:4].rename('YEAR'), left_index=True, right_index=True)
+    
+    
     st.header('Optimal Shift Timing Recommendation')
     st.subheader('Want to find out the optimal working hours for your truck?')
     st.subheader('1. Specify your truck details')
@@ -1007,6 +1006,8 @@ with tab[2]: #javier
 
 
     def find_optimal_hour(truck_id,date,no_of_hours):
+        sales_pred=session.sql("select * from ANALYTICS.SALES_PREDICTION").to_pandas(
+        X_final_scaled=X_final_scaled.merge(sales_pred["l_w5i8_DATE"].astype(str).str[:4].rename('YEAR'), left_index=True, right_index=True)
         query = 'SELECT * FROM "weadf_trend" WHERE DATE = \'{}\''.format(for_weadf)
 
         session.use_schema("ANALYTICS")
