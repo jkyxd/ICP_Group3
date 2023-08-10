@@ -1379,7 +1379,25 @@ with tabs[3]: #Aryton
         results = input_final[['TRUCK_ID', 'LOCATION_ID', 'HOUR', 'PREDICTED']]
     
         return results
+
+    def predict2():
+        file=''
+        if 17 in truck_id or 28 in truck_id or 21 in truck_id:
+            file = 'predicted_17_21_28.csv'
     
+        elif 43 in truck_id or 34 in truck_id:
+            file = 'predicted_34_43.csv'
+    
+        elif 46 in truck_id or 47 in truck_id:
+            file = 'predicted_46_47.csv'
+    
+        elif 1 in truck_id or 2 in truck_id or 13 in truck_id: 
+            file = 'predicted_1_2_13.csv'
+        
+        output = pd.read_csv(file)
+    
+        return output
+
     
     connection_parameters = { "account": 'hiioykl-ix77996',"user": 'AYRTON',"password": 'Arron19*', "role": "ACCOUNTADMIN","database": "FROSTBYTE_TASTY_BYTES","warehouse": "COMPUTE_WH"}
     session = Session.builder.configs(connection_parameters).create()
@@ -1407,11 +1425,11 @@ with tabs[3]: #Aryton
                     if truck_id != st.session_state.prev_selected_truck_ids:
                             # Save the current selected truck IDs to session state
                             selected_truck_ids_str = ', '.join(str(truck_id) for truck_id in truck_id)
-                            st.success(f"Your selected Truck IDs {selected_truck_ids_str} have been saved!")
+                            st.success(f"Your selected Truck ID {selected_truck_ids_str} have been saved!")
                             # Create the map and display truck routes
                             load_map()
                     else:
-                            st.info("Selected truck IDs have not changed. The map has not been changed.")
+                            st.info("Selected truck ID has not changed. The map has not been changed.")
                             load_map()
             else:
                     st.info("No truck IDs have been selected.")
@@ -1428,12 +1446,14 @@ with tabs[3]: #Aryton
     
     
     if st.button('Predict'):
-        results = get_inputs() #input in df form
-        # Round off the predicted values to 2 decimal places
+        results = predict2() #supposedly would call predict() which would actually run the model, but due to streamlit's computational limitations, the outputs are pre-run and predicts sales for 20 locations for hour 18 by location accessibility by truck_id
         results = results.sort_values('PREDICTED', ascending=False)
         results["LOCATION_ID"] = results["LOCATION_ID"].astype(str)
     
-        fig = px.bar(results, y='PREDICTED', x='LOCATION_ID', text_auto='.2f', title="Predicted sales for each location for hour {}".format(hour))
+        #hour is hard coded only because the outputs are pre-run, if not comment out the next line
+        hour = 18
+    
+        fig = px.bar(results, y='PREDICTED', x='LOCATION_ID', text_auto='.2f', title="Predicted sales for selected locations for hour {}".format(hour))
         
         fig.update_xaxes(type='category')
     
