@@ -15,7 +15,9 @@ from datetime import datetime
 from datetime import timedelta
 import math
 import plotly.graph_objects as go
-
+from sklearn.ensemble import StackingRegressor
+from sklearn.ensemble import RandomForestRegressor
+from xgboost import XGBRegressor
 import folium
 from streamlit_folium import st_folium
 import openrouteservice as ors
@@ -86,6 +88,49 @@ def updated_old_model():
     print()
     print('Holdout R2 is: ', r2_score(df_predictions['Predicted'], df_predictions['Holdout']))
     joblib.dump(xgb, 'updated_old_model.joblib')
+
+def new_group_model():
+    session.use_schema("ANALYTICS")
+    X_final_scaled=session.sql('Select * from "Sales_Forecast_Training_Data"').to_pandas()
+    X_final_scaled.rename(columns={"Profit": "Revenue"},inplace=True)
+    
+    # Split the dataset into features (X) and target (y)
+    X = X_final_scaled.drop("Revenue",axis=1)
+    y = X_final_scaled["Revenue"]
+    # Split the dataset into training and testing datasets
+    X_training, X_holdout, y_training, y_holdout = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X_training, y_training, test_size=0.2, random_state=42)
+    
+    rf = RandomForestRegressor()
+    xgb = XGBRegressor()
+    
+    all_models = [('rf', rf), ('xgb', xgb)]
+    
+    stacking_model = StackingRegressor(estimators=all_models, final_estimator=xgb)
+    
+    # Train the stacking model
+    stacking_model = stacking_model.fit(X_train, y_train)
+
+    print('Train MSE is: ', mean_squared_error(stacking_model.predict(X_train), y_train))
+    print('Test MSE is: ', mean_squared_error(stacking_model.predict(X_test), y_test))
+    print()
+    print('Train RMSE is: ',  math.sqrt(mean_squared_error(stacking_model.predict(X_train), y_train)))
+    print('Test RMSE is: ', math.sqrt(mean_squared_error(stacking_model.predict(X_test), y_test)))
+    print()
+    print('Train MAE is: ', mean_absolute_error(stacking_model.predict(X_train), y_train))
+    print('Test MAE is: ', mean_absolute_error(stacking_model.predict(X_test), y_test))
+    print()
+    print('Train R2 is: ', r2_score(stacking_model.predict(X_train), y_train))
+    print('Test R2 is: ', r2_score(stacking_model.predict(X_test), y_test))
+
+    
+    print('Holdout MSE is: ', mean_squared_error(df_predictions['Predicted'], df_predictions['Holdout']))
+    print()
+    print('Holdout RMSE is: ',  math.sqrt(mean_squared_error(df_predictions['Predicted'], df_predictions['Holdout'])))
+    print()
+    print('Holdout MAE is: ', mean_absolute_error(df_predictions['Predicted'], df_predictions['Holdout']))
+    print()
+    print('Holdout R2 is: ', r2_score(df_predictions['Predicted'], df_predictions['Holdout']))
 
 #TRIMMING CODE
 def trim_outliers(dataframe, column, lower_percentile=0.01, upper_percentile=0.99):
