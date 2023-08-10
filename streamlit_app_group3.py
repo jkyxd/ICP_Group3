@@ -1162,7 +1162,7 @@ with tabs[2]: #javier
         
         #Initialize variables
         average_revenue_for_hour['rolling_average']=0
-        working_hours=hours-1
+        working_hours=hours
         max_revenue = 0
         optimal_hours = []
         for i in range(len(average_revenue_for_hour) - working_hours):
