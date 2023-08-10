@@ -37,7 +37,7 @@ model=ayrton_model
 connection_parameters = { "account": 'hiioykl-ix77996',"user": 'JAVIER',"password": '02B289223r04', "role": "ACCOUNTADMIN","database": "FROSTBYTE_TASTY_BYTES","warehouse": "COMPUTE_WH"}
 
 session = Session.builder.configs(connection_parameters).create()
-X_final_scaled=pd.read_csv('x_final_scaled.csv')
+
 
 import plotly.express as px
 st.title('SpeedyBytes 🚚')
@@ -899,42 +899,7 @@ with tabs[0]: #Nathan
 
     map_placeholder = st.empty()
         
-unique_location_ids = X_final_scaled['LOCATION_ID'].unique()
-testing=session.sql('SELECT * FROM TRUCK')
-# Create a list to store the tables data
-table_data = []
-# Create a DataFrame to store the table data
-df_unique_locations_lat_long = pd.DataFrame(columns=["Location ID", "Latitude", "Longitude"])
-public_holidays = [
-    {'Month': 7, 'Day': 4, 'DOW': None, 'WOM': None},  # 4th of July
-    {'Month': 12, 'Day': 24, 'DOW': None, 'WOM': None},  # Christmas Eve
-    {'Month': 12, 'Day': 25, 'DOW': None, 'WOM': None},  # Christmas Day
-    {'Month': 10, 'Day': None, 'DOW': '0', 'WOM': 2},  # Columbus Day (second Monday in October)
-    {'Month': 6, 'Day': 19, 'DOW': None, 'WOM': None},  # Juneteenth
-    {'Month': 9, 'Day': None, 'DOW': '0', 'WOM': 1},  # Labor Day (first Monday in September)
-    {'Month': 1, 'Day': None, 'DOW': '0', 'WOM': 3},  # Martin Luther King, Jr. Day (third Monday in January)
-    {'Month': 5, 'Day': None, 'DOW': '0', 'WOM': -1},  # Memorial Day (last Monday in May)
-    {'Month': 1, 'Day': 1, 'DOW': None, 'WOM': None},  # New Year's Day
-    {'Month': 12, 'Day': 31, 'DOW': None, 'WOM': None},  # New Year's Eve
-    {'Month': 11, 'Day': None, 'DOW': '3', 'WOM': 4},  # Thanksgiving Day (fourth Thursday in November)
-    {'Month': 11, 'Day': None, 'DOW': '2', 'WOM': 4},  # Thanksgiving Eve (fourth Wednesday in November)
-    {'Month': 2, 'Day': 14, 'DOW': None, 'WOM': None},  # Valentine's Day
-    {'Month': 11, 'Day': 11, 'DOW': None, 'WOM': None},  # Veterans Day
-    {'Month': 10, 'Day': 31, 'DOW': None, 'WOM': None},  # Halloween
-    {'Month': 3, 'Day': 17, 'DOW': None, 'WOM': None},  # St. Patrick's Day
-    {'Month': 11, 'Day': 25, 'DOW': '4', 'WOM': None},  # Black Friday
-    {'Month': 12, 'Day': 26, 'DOW': None, 'WOM': None},  # Boxing Day
-]
 
-# Iterate over each unique location ID
-for location_id in unique_location_ids:
-    location = X_final_scaled[X_final_scaled['LOCATION_ID'] == location_id]
-    latitude = location['LAT'].values[0]
-    longitude = location['LONG'].values[0]
-    df_unique_locations_lat_long = pd.concat([df_unique_locations_lat_long, pd.DataFrame({"Location ID": [location_id],
-                                                  "Latitude": [latitude],
-                                                  "Longitude": [longitude]})],
-                         ignore_index=True)
 with tab[2]: #javier
     
     
@@ -1006,6 +971,44 @@ with tab[2]: #javier
 
 
     def find_optimal_hour(truck_id,date,no_of_hours):
+        X_final_scaled = session.sql('Select * from "Sales_Forecast_Training_Data";').to_pandas()
+        X_final_scaled.rename(columns={"Profit": "Revenue"}, inplace=True)
+        unique_location_ids = X_final_scaled['LOCATION_ID'].unique()
+
+        # Create a list to store the tables data
+        table_data = []
+        # Create a DataFrame to store the table data
+        df_unique_locations_lat_long = pd.DataFrame(columns=["Location ID", "Latitude", "Longitude"])
+        public_holidays = [
+            {'Month': 7, 'Day': 4, 'DOW': None, 'WOM': None},  # 4th of July
+            {'Month': 12, 'Day': 24, 'DOW': None, 'WOM': None},  # Christmas Eve
+            {'Month': 12, 'Day': 25, 'DOW': None, 'WOM': None},  # Christmas Day
+            {'Month': 10, 'Day': None, 'DOW': '0', 'WOM': 2},  # Columbus Day (second Monday in October)
+            {'Month': 6, 'Day': 19, 'DOW': None, 'WOM': None},  # Juneteenth
+            {'Month': 9, 'Day': None, 'DOW': '0', 'WOM': 1},  # Labor Day (first Monday in September)
+            {'Month': 1, 'Day': None, 'DOW': '0', 'WOM': 3},  # Martin Luther King, Jr. Day (third Monday in January)
+            {'Month': 5, 'Day': None, 'DOW': '0', 'WOM': -1},  # Memorial Day (last Monday in May)
+            {'Month': 1, 'Day': 1, 'DOW': None, 'WOM': None},  # New Year's Day
+            {'Month': 12, 'Day': 31, 'DOW': None, 'WOM': None},  # New Year's Eve
+            {'Month': 11, 'Day': None, 'DOW': '3', 'WOM': 4},  # Thanksgiving Day (fourth Thursday in November)
+            {'Month': 11, 'Day': None, 'DOW': '2', 'WOM': 4},  # Thanksgiving Eve (fourth Wednesday in November)
+            {'Month': 2, 'Day': 14, 'DOW': None, 'WOM': None},  # Valentine's Day
+            {'Month': 11, 'Day': 11, 'DOW': None, 'WOM': None},  # Veterans Day
+            {'Month': 10, 'Day': 31, 'DOW': None, 'WOM': None},  # Halloween
+            {'Month': 3, 'Day': 17, 'DOW': None, 'WOM': None},  # St. Patrick's Day
+            {'Month': 11, 'Day': 25, 'DOW': '4', 'WOM': None},  # Black Friday
+            {'Month': 12, 'Day': 26, 'DOW': None, 'WOM': None},  # Boxing Day
+        ]
+        
+        # Iterate over each unique location ID
+        for location_id in unique_location_ids:
+            location = X_final_scaled[X_final_scaled['LOCATION_ID'] == location_id]
+            latitude = location['LAT'].values[0]
+            longitude = location['LONG'].values[0]
+            df_unique_locations_lat_long = pd.concat([df_unique_locations_lat_long, pd.DataFrame({"Location ID": [location_id],
+                                                          "Latitude": [latitude],
+                                                          "Longitude": [longitude]})],
+                                 ignore_index=True)
         sales_pred=session.sql("select * from ANALYTICS.SALES_PREDICTION").to_pandas()
         X_final_scaled=X_final_scaled.merge(sales_pred["l_w5i8_DATE"].astype(str).str[:4].rename('YEAR'), left_index=True, right_index=True)
         query = 'SELECT * FROM "weadf_trend" WHERE DATE = \'{}\''.format(for_weadf)
