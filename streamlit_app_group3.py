@@ -79,6 +79,7 @@ def new_group_model():
     session.use_schema("ANALYTICS")
     X_final_scaled=session.sql('Select * from "Sales_Forecast_Training_Data"').to_pandas()
     X_final_scaled.rename(columns={"Profit": "Revenue"},inplace=True)
+    X_final_scaled=trim(X_final_scaled, 'Revenue')
     
     # Split the dataset into features (X) and target (y)
     X = X_final_scaled.drop("Revenue",axis=1)
