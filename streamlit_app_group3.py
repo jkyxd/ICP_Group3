@@ -1505,7 +1505,7 @@ with tabs[1]: #Vibu
     
     @st.cache_data
     def get_lat_long() -> pd.DataFrame:
-        df=pd.read_csv("x_final_scaled.csv")
+        df=pd.read_csv("X_final_scaled_Nathan.csv")
         df.drop_duplicates(subset="LOCATION_ID")
         
         return df[["LOCATION_ID","LAT","LONG"]]           
