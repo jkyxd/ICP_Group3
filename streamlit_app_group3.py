@@ -192,7 +192,7 @@ def train_vibu_model():
 
 with tabs[0]: #Nathan
 
-    X_final_scaled=pd.read_csv('x_final_scaled.csv')
+    X_final_scaled=pd.read_csv('X_final_scaled_Nathan.csv')
     truck_location_df=pd.read_csv('truck_manager_merged_df.csv')
     
     truck_location_df["location_visited"] = truck_location_df["location_visited"].apply(eval)
