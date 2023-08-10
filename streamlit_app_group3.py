@@ -87,8 +87,46 @@ def new_group_model():
     X_training, X_holdout, y_training, y_holdout = train_test_split(X, y, test_size=0.2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X_training, y_training, test_size=0.2, random_state=42)
     
-    rf = RandomForestRegressor()
-    xgb = XGBRegressor()
+    rf = RandomForestRegressor(
+    n_estimators=100,
+    criterion="mse",
+    max_depth=None,
+    min_samples_split=2,
+    min_samples_leaf=1,
+    min_weight_fraction_leaf=0.0,
+    max_features="auto",
+    max_leaf_nodes=None,
+    min_impurity_decrease=0.0,
+    min_impurity_split=None,
+    bootstrap=True,
+    oob_score=False,
+    n_jobs=None,
+    random_state=None,
+    verbose=0,
+    warm_start=False,
+    ccp_alpha=0.0,
+    max_samples=None,
+    )
+
+    xgb = XGBRegressor(
+    objective="reg:squarederror",
+    booster="gbtree",
+    n_estimators=100,
+    learning_rate=0.3,
+    max_depth=6,
+    min_child_weight=1,
+    subsample=1,
+    colsample_bytree=1,
+    colsample_bylevel=1,
+    colsample_bynode=1,
+    reg_alpha=0,
+    reg_lambda=1,
+    scale_pos_weight=1,
+    base_score=0.5,
+    missing=None,
+    importance_type="gain",
+    )
+
     
     all_models = [('rf', rf), ('xgb', xgb)]
     
