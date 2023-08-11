@@ -1131,7 +1131,7 @@ with tabs[2]: #javier
             total_revenue=0
             # Calculate the total revenue for the current 5-hour window
             total_revenue = average_revenue_for_hour.iloc[i:i+working_hours]['AVERAGE REVENUE PER HOUR'].sum()
-            average_revenue_for_hour['rolling_average'].loc[i] = total_revenue
+            average_revenue_for_hour['rolling_average'].iloc[i] = total_revenue
             
              # Check if the current total revenue is greater than the previous maximum
             if total_revenue > max_revenue:
