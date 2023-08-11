@@ -944,20 +944,10 @@ with tabs[2]: #javier
   
 
     st.subheader('3. Specify the date your truck is working on')
-    def is_valid_date_format(date_string):
-        try:
-        # Try to parse the input string as a date
-            year, month, day = map(int, date_string.split('-'))
-            if 1 <= month <= 12 and 1 <= day <= 31 and year>2000:
-                return True
-        except ValueError:
-            pass
-        return False
+    august_days = ['2021-8-2', '2021-8-3', '2021-8-4', '2021-8-5', '2021-8-6', '2021-8-7', '2021-8-8', '2021-8-9', '2021-8-10', '2021-8-11', '2021-8-12', '2021-8-13', '2021-8-14', '2021-8-15', '2021-8-16', '2021-8-17', '2021-8-18', '2021-8-19', '2021-8-20', '2021-8-21', '2021-8-22', '2021-8-23', '2021-8-24', '2021-8-25', '2021-8-26', '2021-8-27', '2021-8-28', '2021-8-29', '2021-8-30', '2021-8-31']
+    date=st.selectbox('Select truck working date', august_days)
 
-    date = st.text_input("Enter the date (YYYY-M-D)", key="date_input")
-    
-    
-    # Validate the user input and display a success message
+        # Validate the user input and display a success message
     if is_valid_date_format(date):
         st.success(f"Your input date '{date}' has been saved !")
         date_d=pd.to_datetime(date)
@@ -968,6 +958,9 @@ with tabs[2]: #javier
     
         #seperate date into month, dow, day, public_holiday
         input_df['date'] = date_d
+    
+    
+
         
         
         
