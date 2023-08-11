@@ -1119,6 +1119,7 @@ with tabs[2]: #javier
         year, month, day = date.split('-')
         converted_date = f"{int(day)}/{int(month)}/{year}"
         chosen_date=hour_predicted[hour_predicted['DATE']==converted_date]
+        chosen_date=chosen_date[chosen_date['TRUCK_ID']==truck_id]
         average_revenue_for_hour=chosen_date.drop(columns=['DATE'])
         
         #Initialize variables
