@@ -948,7 +948,7 @@ with tabs[2]: #javier
     date=st.selectbox('Select truck working date', august_days)
 
         # Validate the user input and display a success message
-    if is_valid_date_format(date):
+    if date:
         st.success(f"Your input date '{date}' has been saved !")
         date_d=pd.to_datetime(date)
         datetime_object = datetime.strptime(date, '%Y-%m-%d')
