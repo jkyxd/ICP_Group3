@@ -205,7 +205,129 @@ def train_vibu_model():
     )
     xgb.fit(X_train, y_train, early_stopping_rounds=10, eval_set=[(X_test, y_test)])
     joblib.dump(xgb, 'vibu_model.joblib')
+# Iterate over each hour
+def get_usual_route():
+    truck_df=pd.read_csv("truck_details.csv")
+    def calculate_list_and_mod(row):
+        working_hours = row['working_hour']
+        num_locs = row['Num_of_locs']
+        each_loc_hours = working_hours // num_locs
+        remainder = working_hours % num_locs
+        result_list = [each_loc_hours] * num_locs
+        for i in range(remainder):
+            result_list[i] += 1
+            return result_list
+    def calculate_start_time(row):
+        result_list=row["shift_hours"]
+        num_locs = row['Num_of_locs']
+        start_times = [row['STARTING_TIME']]
+        for i in range(1, num_locs):
+            start_times.append(start_times[-1] + result_list[i - 1])
 
+        start_times.append(row["ENDING_TIME"])
+        return start_times
+    truck_df['Num_of_locs']=2
+    truck_df["working_hour"]=truck_df['ENDING_TIME']-truck_df['STARTING_TIME']+1
+    truck_df["shift_hours"]=truck_df.apply(calculate_list_and_mod, axis=1)
+    truck_df["start_time"]=truck_df.apply(calculate_start_time, axis=1)
+    algo_table = session.table('ROUTING."ALGO_DATA(With Year)"')
+    algo_df = algo_table.collect()
+    algo_df=pd.DataFrame(algo_df,columns=algo_table.columns)
+    df_drop=algo_df.drop("YEAR",axis=1)
+    algo_table.groupby(["Hour","LOCATION_ID"]).max()["SUM(ORDER_TOTAL)"]
+    route_df=df_drop.groupby(["TRUCK_ID","HOUR","LOCATION_ID"]).max()['"SUM(ORDER_TOTAL)"'].reset_index()
+    truck_df["location_visited"]=pd.Series([[]] * len(truck_df))
+    truck_df["predicted_earning"]=pd.Series([[]] * len(truck_df))
+    def calculate_next_start_time(start_times, current_hour):
+        if current_hour not in start_times:
+            return None
+        index = start_times.index(current_hour) + 1
+        if index == len(start_times):
+            return None
+        return start_times[index]
+ 
+    for hour in range(24):
+    
+        trucks_starting_now = truck_df[truck_df['start_time'].apply(lambda start_times: hour in start_times)]
+        trucks_starting_now ['next_start_time'] =  trucks_starting_now ['start_time'].apply(lambda start_times: calculate_next_start_time(start_times,hour))
+    
+    
+        for index, truck in  trucks_starting_now .iterrows():
+         
+         
+         ### ditance calculator
+         ## remove values from available_locatio based on distance
+         ##if u wan any other way also can
+            new_list=[]
+
+            if pd.notna(truck["next_start_time"]):
+       
+                route_df_h=route_df[(route_df["HOUR"]>=hour) & (route_df["HOUR"]<=truck["start_time"][truck["start_time"].index(hour)+1] )] 
+            
+                route_df_t= route_df_h[ route_df_h["TRUCK_ID"]==truck["TRUCK_ID"]]
+    
+                    
+                route_df_grpby=route_df_t.groupby("LOCATION_ID").sum()['"SUM(ORDER_TOTAL)"']
+                if len(truck["location_visited"])>0:
+                    route_df_grpby.drop(truck["location_visited"][0])
+            
+                location =  route_df_grpby.idxmax()
+        
+        
+            
+      
+                truck_df.at[index,'location_visited'] =   list(truck_df.at[index,'location_visited']) + [location]
+                truck_df.at[index,'predicted_earning'] = list(truck_df.at[index,'predicted_earning']) + [route_df_grpby.max()]
+                
+
+            
+
+  
+    def haversine_distance(lat1, lon1, lat2, lon2):
+        # Convert latitude and longitude from degrees to radians
+            lat1_rad = math.radians(lat1)
+            lon1_rad = math.radians(lon1)
+            lat2_rad = math.radians(lat2)
+            lon2_rad = math.radians(lon2)
+
+        # Haversine formula
+            dlon = lon2_rad - lon1_rad
+            dlat = lat2_rad - lat1_rad
+            a = math.sin(dlat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon/2)**2
+            c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+            distance = 6371 * c  # Radius of the Earth in kilometers
+            return distance
+    def get_lat_long(location_id):
+        row = algo_df[algo_df['LOCATION_ID'] == location_id]
+        if not row.empty:
+            return row['LAT'].values[0], row['LONG'].values[0]
+        return None, None
+
+# Calculate the total distance traveled for each truck
+    total_distances = []
+    for _, row in truck_df.iterrows():
+        starting_location = row['location_visited'][0]
+        location_visited = row['location_visited'][1:]
+    
+        total_distance = 0
+        prev_lat, prev_lon = get_lat_long(starting_location)  # Get the latitude and longitude of the starting location
+    
+    # Loop through each location in location_visited
+        for location_id in location_visited:
+            lat, lon = get_lat_long(location_id)
+        
+        # If latitude and longitude are found, calculate the distance between the two locations
+            if lat is not None and lon is not None:
+                total_distance += haversine_distance(prev_lat, prev_lon, lat, lon)
+        
+            # Update the previous location
+                prev_lat, prev_lon = lat, lon
+    
+        total_distances.append(total_distance)
+
+# Add the total_distances list as a new column to the truck_df
+    truck_df['total_distance_traveled'] = total_distances
+    truck_df.to_csv("truck_usual_routine.csv",index=False,header=True)
 with tabs[0]: #Nathan
 
     X_final_scaled=pd.read_csv('X_final_scaled_Nathan.csv')
