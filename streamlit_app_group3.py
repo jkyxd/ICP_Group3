@@ -1474,7 +1474,7 @@ with tabs[3]: #Aryton
 
    
 with tabs[1]: #Vibu
-    # st.write('This tabs compares the recomended route vs the old route. The old route is generated through checking the frequent location visited for the shift calculating the sales the truck has done in that location.The tab is for truck managers to compare and understand the impact of the routing algorithim')
+    st.write('This tabs compares the recomended route vs the old route. The old route is generated through checking the frequent location visited for the shift calculating the sales the truck has done in that location.The tab is for truck managers to compare and understand the impact of the routing algorithim')
     
     @st.cache_data
     def get_data() -> pd.DataFrame:
