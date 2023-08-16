@@ -1850,14 +1850,15 @@ try:
     index_tab =int(query["tab"][0])
     print(index_tab)
     ## Click on that tab
-    js = f"""
+    for index in range(0,11):
+        js = f"""
     <script>
-        var tab = window.parent.document.getElementById('tabs-bui6-tab-{index_tab}');
+        var tab = window.parent.document.getElementById('tabs-bui{index}-tab-{index_tab}');
         tab.click();
     </script>
     """
 
-    st.components.v1.html(js)
+        st.components.v1.html(js)
 
 except :
     print("WRONG")
