@@ -1000,7 +1000,7 @@ with tabs[0]: #Nathan
     ## STREAMLIT APP
     
     st.header('Routing Map🗺️')
-    st.write('This tab helps to display crucial information regarding to each truck. The map below will show the route of each truck.')
+    st.write('Optimise your truck delivery operations with our advanced routing algorithm. This tab displays meticulously planned routes that optimises revenue by considering distance, shift timings, and avoiding simultaneous truck presence at the same location. Streamline your logistics, reduce costs, and enhance customer satisfaction with our route optimisation solution.')
     st.subheader('Choose a Truck Manager')
     
     # Extract a list of unique names from the "Name" column
