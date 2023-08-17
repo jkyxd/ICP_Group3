@@ -1280,7 +1280,7 @@ with tabs[2]: #javier
         
         
         
-    if st.button("Run Algorithm"):
+    if st.button("Get optimal working hours"):
         # Display a loading message while the algorithm is running
         with st.spinner("Running the algorithm..."):
             output = find_optimal_hour_output(truck_id,date,no_of_hours)
