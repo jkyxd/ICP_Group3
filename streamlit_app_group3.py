@@ -1582,12 +1582,12 @@ with tabs[3]: #Aryton
     
     
     if st.button('Predict'):
-        results = predict() #supposedly would call predict() which would actually run the model, but due to streamlit's computational limitations, the outputs are pre-run and predicts sales for 20 locations for hour 18 by location accessibility by truck_id
+        results = predict2() #supposedly would call predict() which would actually run the model, but due to streamlit's computational limitations, the outputs are pre-run and predicts sales for 20 locations for hour 18 by location accessibility by truck_id
         results = results.sort_values('PREDICTED', ascending=False)
         results["LOCATION_ID"] = results["LOCATION_ID"].astype(str)
     
         #hour is hard coded only because the outputs are pre-run, if not comment out the next line
-        #hour = 18
+        hour = 18
     
         fig = px.bar(results, y='PREDICTED', x='LOCATION_ID', text_auto='.2f', title="Predicted sales for selected locations for hour {}".format(hour))
         
