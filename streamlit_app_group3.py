@@ -24,6 +24,7 @@ import openrouteservice as ors
 import operator
 from functools import reduce
 from streamlit_javascript import st_javascript
+import holidays
 
 st.set_page_config(layout="wide")
 
