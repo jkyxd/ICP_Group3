@@ -1459,11 +1459,10 @@ with tabs[3]: #Aryton
         #input_df['LAT'] = temp['LAT']
         #input_df['LONG'] = temp['LONG']
         #input_df['LOCATION_ID'] = loc_id
-        st.write(input_df)
         
-        input_df['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'] = ['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'].mean()
-        input_df['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'] = ['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'].mean()
-    
+        input_df['SUM_PREV_YEAR_MONTH_SALES_CITY_MENU_TYPE'] = 0.000000000000000246229829515848
+        input_df['SUM_DAY_OF_WEEK_AVG_CITY_MENU_TYPE'] = 0.0000000000000000837602326045364
+
     
     
         #get encoded features
